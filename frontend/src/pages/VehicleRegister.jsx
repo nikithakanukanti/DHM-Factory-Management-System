@@ -86,7 +86,7 @@ function VehicleRegister() {
              */
 
             if (Array.isArray(response.data)) {
-
+                console.log("vehicle api response:", response.data);
                 setVehicles(response.data);
 
             } else {
@@ -403,7 +403,7 @@ function VehicleRegister() {
 
         alert("Vehicle entry updated successfully.");
 
-        clearForm();
+        resetForm();
         await loadVehicles();
 
     } catch (error) {
@@ -415,7 +415,7 @@ function VehicleRegister() {
 
         alert(
             error.response?.data?.message ||
-            "Unable to save the entry. Please check the backend."
+            "Supervisor cannot edit vehicle entries. Please contact the administrator."
         );
     }finally {
         setLoading(false);
@@ -1219,14 +1219,14 @@ function VehicleRegister() {
 
                                             <td>
                                                 {
-                                                    vehicle.commodity
+                                                    vehicle.commodity || "-"
                                                 }
                                             </td>
+                                            
 
                                             <td>
                                                 {
-                                                    vehicle.remarks ||
-                                                    "-"
+                                                    vehicle.remarks || "-"
                                                 }
                                             </td>
 

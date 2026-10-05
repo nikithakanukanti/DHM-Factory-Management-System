@@ -3,6 +3,9 @@ package com.dhm.backend.controller;
 import com.dhm.backend.entity.Vehicle;
 import com.dhm.backend.repository.VehicleRepository;
 
+import com.dhm.backend.service.RecordAccessService;
+import org.springframework.security.core.Authentication;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +17,11 @@ import java.util.List;
 public class VehicleController {
 
     private final VehicleRepository vehicleRepository;
+    private final RecordAccessService recordAccessService;
 
-    public VehicleController(VehicleRepository vehicleRepository) {
+    public VehicleController(VehicleRepository vehicleRepository, RecordAccessService recordAccessService) {
         this.vehicleRepository = vehicleRepository;
+        this.recordAccessService = recordAccessService;
     }
 
     // ==============================
@@ -99,10 +104,19 @@ public class VehicleController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateVehicle(
             @PathVariable Long id,
-            @RequestBody Vehicle updatedVehicle) {
+            @RequestBody Vehicle updatedVehicle,
+            Authentication authentication) {
 
         return vehicleRepository.findById(id)
                 .map(vehicle -> {
+
+                    if (!recordAccessService.canModify(
+                            vehicle.getDate(),
+                            authentication)) {
+
+                        return ResponseEntity.status(403)
+                                .body("Supervisor cannot edit previous-day records.");
+                    }
 
                     if (updatedVehicle.getDate() == null) {
                         return ResponseEntity.badRequest()
@@ -163,6 +177,10 @@ public class VehicleController {
                             updatedVehicle.isImported()
                     );
 
+                    vehicle.setCommodity(
+                            updatedVehicle.getCommodity()
+                    );
+
                     vehicle.setRemarks(
                             updatedVehicle.getRemarks()
                     );
@@ -179,15 +197,25 @@ public class VehicleController {
     // ==============================
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVehicle(
-            @PathVariable Long id) {
+public ResponseEntity<?> deleteVehicle(
+        @PathVariable Long id,
+        Authentication authentication) {
 
-        if (!vehicleRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
+    return vehicleRepository.findById(id)
+            .map(vehicle -> {
 
-        vehicleRepository.deleteById(id);
+                if (!recordAccessService.canModify(
+                        vehicle.getDate(),
+                        authentication)) {
 
-        return ResponseEntity.noContent().build();
-    }
+                    return ResponseEntity.status(403)
+                            .body("Supervisor cannot delete previous-day records.");
+                }
+
+                vehicleRepository.delete(vehicle);
+
+                return ResponseEntity.noContent().build();
+            })
+            .orElse(ResponseEntity.notFound().build());
+}
 }

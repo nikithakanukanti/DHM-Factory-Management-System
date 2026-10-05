@@ -4,6 +4,8 @@ import com.dhm.backend.entity.ReactorTiming;
 import com.dhm.backend.repository.ReactorTimingRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.dhm.backend.service.RecordAccessService;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -12,10 +14,13 @@ import java.util.List;
 public class ReactorTimingController {
 
     private final ReactorTimingRepository repository;
+    private final RecordAccessService recordAccessService;
 
     public ReactorTimingController(
-            ReactorTimingRepository repository) {
+            ReactorTimingRepository repository,
+            RecordAccessService recordAccessService) {
         this.repository = repository;
+        this.recordAccessService = recordAccessService;
     }
 
     @GetMapping
@@ -40,12 +45,20 @@ public class ReactorTimingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ReactorTiming> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
-            @RequestBody ReactorTiming updated) {
+            @RequestBody ReactorTiming updated,
+            Authentication authentication) {
 
         return repository.findById(id)
                 .map(timing -> {
+                    if (!recordAccessService.canModify(
+                            timing.getDate(),
+                            authentication)) {
+
+                        return ResponseEntity.status(403)
+                                .body("Supervisor cannot edit previous-day records.");
+                    }
 
                     timing.setDate(updated.getDate());
                     timing.setReactor1Time(
@@ -62,16 +75,26 @@ public class ReactorTimingController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id) {
+   @DeleteMapping("/{id}")
+public ResponseEntity<?> delete(
+        @PathVariable Long id,
+        Authentication authentication) {
 
-        if (!repository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
+    return repository.findById(id)
+            .map(timing -> {
 
-        repository.deleteById(id);
+                if (!recordAccessService.canModify(
+                        timing.getDate(),
+                        authentication)) {
 
-        return ResponseEntity.noContent().build();
-    }
+                    return ResponseEntity.status(403)
+                            .body("Supervisor cannot delete previous-day records.");
+                }
+
+                repository.delete(timing);
+
+                return ResponseEntity.noContent().build();
+            })
+            .orElse(ResponseEntity.notFound().build());
 } 
+}

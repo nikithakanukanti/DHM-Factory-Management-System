@@ -6,15 +6,19 @@ import com.dhm.backend.repository.PurchaseRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.dhm.backend.service.RecordAccessService;
+import org.springframework.security.core.Authentication;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/purchases")
 public class PurchaseController {
 
+    private final RecordAccessService recordAccessService;
     private final PurchaseRepository purchaseRepository;
-
-    public PurchaseController(PurchaseRepository purchaseRepository) {
+    public PurchaseController(RecordAccessService recordAccessService, PurchaseRepository purchaseRepository) {
+        this.recordAccessService = recordAccessService;
         this.purchaseRepository = purchaseRepository;
     }
 
@@ -43,46 +47,64 @@ public class PurchaseController {
     }
 
     // Update purchase
-    @PutMapping("/{id}")
-    public ResponseEntity<Purchase> updatePurchase(
-            @PathVariable Long id,
-            @RequestBody Purchase updatedPurchase) {
+   @PutMapping("/{id}")
+public ResponseEntity<?> updatePurchase(
+        @PathVariable Long id,
+        @RequestBody Purchase updatedPurchase,
+        Authentication authentication) {
 
-        return purchaseRepository.findById(id)
-                .map(purchase -> {
+    return purchaseRepository.findById(id)
+            .map(purchase -> {
 
-                    purchase.setDate(updatedPurchase.getDate());
-                    purchase.setGrossWeight(
-                            updatedPurchase.getGrossWeight()
-                    );
-                    purchase.setTareWeight(
-                            updatedPurchase.getTareWeight()
-                    );
-                    purchase.setCommodity(
-                            updatedPurchase.getCommodity()
-                    );
-                    purchase.setRemarks(
-                            updatedPurchase.getRemarks()
-                    );
+                if (!recordAccessService.canModify(
+                        purchase.getDate(),
+                        authentication)) {
 
-                    return ResponseEntity.ok(
-                            purchaseRepository.save(purchase)
-                    );
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
+                    return ResponseEntity.status(403)
+                            .body("Supervisor cannot edit previous-day records.");
+                }
 
-    // Delete purchase
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePurchase(
-            @PathVariable Long id) {
+                purchase.setDate(updatedPurchase.getDate());
+                purchase.setGrossWeight(
+                        updatedPurchase.getGrossWeight()
+                );
+                purchase.setTareWeight(
+                        updatedPurchase.getTareWeight()
+                );
+                purchase.setCommodity(
+                        updatedPurchase.getCommodity()
+                );
+                purchase.setRemarks(
+                        updatedPurchase.getRemarks()
+                );
 
-        if (!purchaseRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+                return ResponseEntity.ok(
+                        purchaseRepository.save(purchase)
+                );
+            })
+            .orElse(ResponseEntity.notFound().build());
+}
+
+@DeleteMapping("/{id}")
+public ResponseEntity<?> deletePurchase(
+        @PathVariable Long id,
+        Authentication authentication) {
+
+    return purchaseRepository.findById(id)
+            .map(purchase -> {
+
+                if (!recordAccessService.canModify(
+                        purchase.getDate(),
+                        authentication)) {
+
+                    return ResponseEntity.status(403)
+                            .body("Supervisor cannot delete previous-day records.");
+                }
+
+                purchaseRepository.delete(purchase);
+
+                return ResponseEntity.noContent().build();
+            })
+            .orElse(ResponseEntity.notFound().build());
         }
-
-        purchaseRepository.deleteById(id);
-
-        return ResponseEntity.noContent().build();
-    }
 }

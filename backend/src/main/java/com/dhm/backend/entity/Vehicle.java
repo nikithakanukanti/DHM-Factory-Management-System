@@ -1,5 +1,8 @@
 package com.dhm.backend.entity;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,9 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "vehicles")
@@ -31,6 +31,8 @@ public class Vehicle {
     @Column(name = "tare_weight", precision = 10, scale = 2)
     private BigDecimal tareWeight;
 
+    @Column(name = "commodity")
+    private String commodity;
     private boolean local;
 
     private boolean imported;
@@ -109,4 +111,10 @@ public class Vehicle {
     public void setRemarks(String remarks) {
         this.remarks = remarks;
     }
-}
+    public String getCommodity() {
+        return commodity;
+    }
+    public void setCommodity(String commodity) {
+        this.commodity = commodity;
+    }
+} 

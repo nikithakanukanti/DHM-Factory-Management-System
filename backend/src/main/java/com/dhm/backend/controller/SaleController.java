@@ -6,6 +6,9 @@ import com.dhm.backend.repository.SaleRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.dhm.backend.service.RecordAccessService;
+import org.springframework.security.core.Authentication;
+
 import java.util.List;
 
 @RestController
@@ -13,9 +16,11 @@ import java.util.List;
 public class SaleController {
 
     private final SaleRepository saleRepository;
+    private final RecordAccessService recordAccessService;
 
-    public SaleController(SaleRepository saleRepository) {
+    public SaleController(SaleRepository saleRepository, RecordAccessService recordAccessService) {
         this.saleRepository = saleRepository;
+        this.recordAccessService = recordAccessService;
     }
 
     // Get all sales
@@ -41,12 +46,20 @@ public class SaleController {
 
     // Update sale
     @PutMapping("/{id}")
-    public ResponseEntity<Sale> updateSale(
+    public ResponseEntity<?> updateSale(
             @PathVariable Long id,
-            @RequestBody Sale updatedSale) {
+            @RequestBody Sale updatedSale,
+            Authentication authentication) {
 
         return saleRepository.findById(id)
                 .map(sale -> {
+                    if (!recordAccessService.canModify(
+                            sale.getDate(),
+                            authentication)) {
+
+                        return ResponseEntity.status(403)
+                                .body("Supervisor cannot edit previous-day records.");
+                    }
 
                     sale.setDate(updatedSale.getDate());
                     sale.setVehicleNo(updatedSale.getVehicleNo());
@@ -64,14 +77,25 @@ public class SaleController {
 
     // Delete sale
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSale(@PathVariable Long id) {
+public ResponseEntity<?> deleteSale(
+        @PathVariable Long id,
+        Authentication authentication) {
 
-        if (!saleRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
+    return saleRepository.findById(id)
+            .map(sale -> {
 
-        saleRepository.deleteById(id);
+                if (!recordAccessService.canModify(
+                        sale.getDate(),
+                        authentication)) {
 
-        return ResponseEntity.noContent().build();
-    }
+                    return ResponseEntity.status(403)
+                            .body("Supervisor cannot delete previous-day records.");
+                }
+
+                saleRepository.delete(sale);
+
+                return ResponseEntity.noContent().build();
+            })
+            .orElse(ResponseEntity.notFound().build());
+}
 }

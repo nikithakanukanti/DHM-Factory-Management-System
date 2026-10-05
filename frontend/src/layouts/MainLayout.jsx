@@ -1,19 +1,116 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 function MainLayout() {
     const navigate = useNavigate();
 
-    function handleLogout() {
-        localStorage.removeItem("username");
-        localStorage.removeItem("role");
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-        fetch("http://localhost:8090/logout", {
-            method: "POST",
-            credentials: "include"
-        }).finally(() => {
+    useEffect(() => {
+        checkCurrentUser();
+    }, []);
+
+    async function checkCurrentUser() {
+        try {
+            const response = await axios.get(
+                "http://localhost:8090/api/auth/me",
+                {
+                    withCredentials: true
+                }
+            );
+
+            console.log("CURRENT USER:", response.data);
+
+            setUser(response.data);
+
+            // Keep the actual logged-in user in session storage
+            sessionStorage.setItem(
+                "dhmUser",
+                JSON.stringify(response.data)
+            );
+
+        } catch (error) {
+            console.error(
+                "Unable to get current user:",
+                error
+            );
+
+            sessionStorage.removeItem("dhmUser");
+
             navigate("/login");
-        });
+        } finally {
+            setLoading(false);
+        }
     }
+
+    async function handleLogout() {
+        try {
+            await axios.post(
+                "http://localhost:8090/logout",
+                {},
+                {
+                    withCredentials: true
+                }
+            );
+        } catch (error) {
+            console.error(
+                "Logout error:",
+                error
+            );
+        } finally {
+            sessionStorage.removeItem("dhmUser");
+            localStorage.removeItem("username");
+            localStorage.removeItem("role");
+
+            navigate("/login");
+        }
+    }
+
+    // Wait until backend confirms the logged-in user
+    if (loading) {
+        return (
+            <div className="app-layout">
+                <div
+                    style={{
+                        width: "100%",
+                        minHeight: "100vh",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#f5f7fb",
+                        color: "#334155",
+                        fontSize: "15px",
+                        fontWeight: "600"
+                    }}
+                >
+                    Loading...
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+
+    const isAdmin = user.role === "ADMIN";
+
+    const displayName =
+        user.username === "admin"
+            ? "Admin"
+            : user.username === "supervisor"
+                ? "Supervisor"
+                : user.username;
+
+    const roleName =
+        isAdmin
+            ? "Administrator"
+            : "Supervisor";
+
+    const avatarLetter =
+        displayName.charAt(0).toUpperCase();
 
     return (
         <div className="app-layout">
@@ -35,19 +132,26 @@ function MainLayout() {
                             transform: "none",
                             animation: "none",
                             transition: "none",
-                            objectPosition: "center",
+                            objectPosition: "center"
                         }}
                     />
 
                     <div className="logo-text">
+
                         <h2>DHM</h2>
-                        <span>Factory Digital Entry</span>
+
+                        <span>
+                            Factory Digital Entry
+                        </span>
+
                     </div>
 
                 </div>
 
 
-                {/* NAVIGATION */}
+                {/* =========================
+                    NAVIGATION
+                    ========================= */}
                 <nav>
 
                     <NavLink to="/dashboard">
@@ -70,30 +174,48 @@ function MainLayout() {
                         Reactor Timing
                     </NavLink>
 
-                    <NavLink to="/reports">
-                        Reports
-                    </NavLink>
 
-                    <NavLink to="/users">
-                        Users
-                    </NavLink>
+                    {/* ADMIN ONLY */}
+                    {isAdmin && (
+                        <>
+                            <NavLink to="/reports">
+                                Reports
+                            </NavLink>
+
+                            <NavLink to="/users">
+                                Users
+                            </NavLink>
+                        </>
+                    )}
 
                 </nav>
 
 
-                {/* SIDEBAR BOTTOM */}
+                {/* =========================
+                    SIDEBAR BOTTOM
+                    ========================= */}
                 <div className="sidebar-bottom">
 
                     <div className="logged-user">
+
                         <div className="user-avatar">
-                            A
+                            {avatarLetter}
                         </div>
 
                         <div className="user-details">
-                            <strong>Admin</strong>
-                            <span>Administrator</span>
+
+                            <strong>
+                                {displayName}
+                            </strong>
+
+                            <span>
+                                {roleName}
+                            </span>
+
                         </div>
+
                     </div>
+
 
                     <button
                         className="logout-button"
@@ -117,9 +239,11 @@ function MainLayout() {
                 <header className="topbar">
 
                     <div>
+
                         <h2>
                             DHM Factory Digital Entry
                         </h2>
+
                     </div>
 
                 </header>
