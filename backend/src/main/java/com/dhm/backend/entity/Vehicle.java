@@ -1,7 +1,13 @@
 package com.dhm.backend.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -25,15 +31,6 @@ public class Vehicle {
     @Column(name = "tare_weight", precision = 10, scale = 2)
     private BigDecimal tareWeight;
 
-    @Column(name = "net_weight", precision = 10, scale = 2)
-   
-    @Transient
-    public BigDecimal getNetWeight() {
-        if (grossWeight == null || tareWeight == null) {
-            return null;
-        }
-        return grossWeight.subtract(tareWeight);
-    }
     private boolean local;
 
     private boolean imported;
@@ -79,6 +76,15 @@ public class Vehicle {
         this.tareWeight = tareWeight;
     }
 
+    @Transient
+    public BigDecimal getNetWeight() {
+
+        if (grossWeight == null || tareWeight == null) {
+            return null;
+        }
+
+        return grossWeight.subtract(tareWeight);
+    }
 
     public boolean isLocal() {
         return local;

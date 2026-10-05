@@ -11,24 +11,48 @@ const commodities = [
     "Fuel Oil"
 ];
 
-const emptyForm = {
-    date: new Date().toISOString().split("T")[0],
-    netWeight: "",
-    commodity: "",
-    remarks: ""
-};
+function getTodayDate() {
+    const today = new Date();
+
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function getEmptyForm() {
+    return {
+        date: getTodayDate(),
+        netWeight: "",
+        commodity: "",
+        remarks: ""
+    };
+}
 
 function PurchaseRegister() {
 
     const [purchases, setPurchases] = useState([]);
-    const [form, setForm] = useState(emptyForm);
+    const [form, setForm] = useState(getEmptyForm());
     const [search, setSearch] = useState("");
     const [editingId, setEditingId] = useState(null);
+
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+
+    // =========================
+    // LOAD PURCHASES
+    // =========================
 
     async function loadPurchases() {
+
         try {
+
             setLoading(true);
+            setError("");
 
             const response = await axios.get(
                 `${API_URL}/api/purchases`,
@@ -37,17 +61,51 @@ function PurchaseRegister() {
                 }
             );
 
-            setPurchases(
-                Array.isArray(response.data)
-                    ? response.data
-                    : []
-            );
+            if (Array.isArray(response.data)) {
+
+                setPurchases(response.data);
+
+            } else {
+
+                setPurchases([]);
+
+                setError(
+                    "Unable to load purchase records."
+                );
+            }
 
         } catch (error) {
-            console.error("Purchase loading error:", error);
+
+            console.error(
+                "Purchase loading error:",
+                error
+            );
+
             setPurchases([]);
+
+            if (error.response?.status === 401) {
+
+                setError(
+                    "Your login session has expired. Please login again."
+                );
+
+            } else if (error.response?.status === 403) {
+
+                setError(
+                    "You do not have permission to view purchase records."
+                );
+
+            } else {
+
+                setError(
+                    "Unable to connect to the backend."
+                );
+            }
+
         } finally {
+
             setLoading(false);
+
         }
     }
 
@@ -55,32 +113,66 @@ function PurchaseRegister() {
         loadPurchases();
     }, []);
 
-    function handleChange(event) {
-        const { name, value } = event.target;
+    // =========================
+    // HANDLE INPUT
+    // =========================
 
-        setForm(prev => ({
-            ...prev,
+    function handleChange(event) {
+
+        const {
+            name,
+            value
+        } = event.target;
+
+        setForm(previous => ({
+            ...previous,
             [name]: value
         }));
+
     }
 
+    // =========================
+    // CLEAR FORM
+    // =========================
+
+    function clearForm() {
+
+        setForm(getEmptyForm());
+
+        setEditingId(null);
+
+        setError("");
+        setSuccess("");
+    }
+
+    // =========================
+    // SAVE / UPDATE
+    // =========================
+
     async function handleSubmit(event) {
+
         event.preventDefault();
+
+        setError("");
+        setSuccess("");
 
         const weight = Number(form.netWeight);
 
         if (!form.date) {
-            alert("Please select a date.");
+
+            setError("Please select a date.");
             return;
         }
 
         if (!weight || weight <= 0) {
-            alert("Please enter a valid net weight.");
+
+            setError("Please enter a valid net weight.");
             return;
         }
 
         if (!form.commodity) {
-            alert("Please select a commodity.");
+
+            setError("Please select a commodity.");
             return;
         }
 
@@ -93,6 +185,8 @@ function PurchaseRegister() {
 
         try {
 
+            setSaving(true);
+
             if (editingId) {
 
                 await axios.put(
@@ -103,7 +197,9 @@ function PurchaseRegister() {
                     }
                 );
 
-                alert("Purchase entry updated successfully.");
+                setSuccess(
+                    "Purchase entry updated successfully."
+                );
 
             } else {
 
@@ -115,39 +211,76 @@ function PurchaseRegister() {
                     }
                 );
 
-                alert("Purchase entry saved successfully.");
+                setSuccess(
+                    "Purchase entry saved successfully."
+                );
             }
 
             clearForm();
-            loadPurchases();
+
+            await loadPurchases();
 
         } catch (error) {
 
-            console.error("Purchase save error:", error);
-
-            alert(
-                error.response?.data?.message ||
-                "Unable to save purchase entry."
+            console.error(
+                "Purchase save error:",
+                error
             );
+
+            if (error.response?.status === 401) {
+
+                setError(
+                    "Your login session has expired. Please login again."
+                );
+
+            } else if (error.response?.status === 403) {
+
+                setError(
+                    "You do not have permission to save purchase entries."
+                );
+
+            } else {
+
+                setError(
+                    error.response?.data?.message ||
+                    "Unable to save purchase entry."
+                );
+            }
+
+        } finally {
+
+            setSaving(false);
+
         }
     }
+
+    // =========================
+    // EDIT
+    // =========================
 
     function startEdit(purchase) {
 
         setEditingId(purchase.id);
 
         setForm({
-            date: purchase.date || "",
-            netWeight: purchase.netWeight || "",
+            date: purchase.date || getTodayDate(),
+            netWeight: purchase.netWeight ?? "",
             commodity: purchase.commodity || "",
             remarks: purchase.remarks || ""
         });
+
+        setError("");
+        setSuccess("");
 
         window.scrollTo({
             top: 0,
             behavior: "smooth"
         });
     }
+
+    // =========================
+    // DELETE
+    // =========================
 
     async function deletePurchase(id) {
 
@@ -161,6 +294,10 @@ function PurchaseRegister() {
 
         try {
 
+            setLoading(true);
+            setError("");
+            setSuccess("");
+
             await axios.delete(
                 `${API_URL}/api/purchases/${id}`,
                 {
@@ -168,221 +305,372 @@ function PurchaseRegister() {
                 }
             );
 
-            loadPurchases();
+            setSuccess(
+                "Purchase entry deleted successfully."
+            );
+
+            await loadPurchases();
 
         } catch (error) {
 
-            console.error("Delete purchase error:", error);
+            console.error(
+                "Delete purchase error:",
+                error
+            );
 
-            alert("Unable to delete purchase entry.");
+            if (error.response?.status === 403) {
+
+                setError(
+                    "You do not have permission to delete purchase entries."
+                );
+
+            } else {
+
+                setError(
+                    "Unable to delete purchase entry."
+                );
+            }
+
+        } finally {
+
+            setLoading(false);
+
         }
     }
 
-    function clearForm() {
-
-        setForm({
-            ...emptyForm,
-            date: new Date().toISOString().split("T")[0]
-        });
-
-        setEditingId(null);
-    }
+    // =========================
+    // SEARCH
+    // =========================
 
     const filteredPurchases = useMemo(() => {
 
-        const query = search.toLowerCase().trim();
+        const query = search
+            .toLowerCase()
+            .trim();
 
         if (!query) {
             return purchases;
         }
 
-        return purchases.filter(purchase =>
-            String(purchase.date || "")
-                .toLowerCase()
-                .includes(query) ||
+        return purchases.filter(purchase => {
 
-            String(purchase.commodity || "")
-                .toLowerCase()
-                .includes(query) ||
+            return (
 
-            String(purchase.remarks || "")
-                .toLowerCase()
-                .includes(query)
-        );
+                String(
+                    purchase.date || ""
+                )
+                    .toLowerCase()
+                    .includes(query)
+
+                ||
+
+                String(
+                    purchase.netWeight || ""
+                )
+                    .toLowerCase()
+                    .includes(query)
+
+                ||
+
+                String(
+                    purchase.commodity || ""
+                )
+                    .toLowerCase()
+                    .includes(query)
+
+                ||
+
+                String(
+                    purchase.remarks || ""
+                )
+                    .toLowerCase()
+                    .includes(query)
+
+            );
+
+        });
 
     }, [purchases, search]);
 
-    const totalPurchaseWeight = filteredPurchases.reduce(
-        (sum, purchase) =>
-            sum + Number(purchase.netWeight || 0),
-        0
-    );
+    // =========================
+    // SUMMARY
+    // =========================
+
+    const totalPurchaseWeight =
+        filteredPurchases.reduce(
+            (sum, purchase) =>
+                sum +
+                Number(
+                    purchase.netWeight || 0
+                ),
+            0
+        );
+
+    // =========================
+    // RENDER
+    // =========================
 
     return (
+
         <div className="vehicle-page">
 
-            {/* PAGE HEADER */}
+            {/* =========================
+                PAGE HEADER
+            ========================= */}
 
-            <div className="vehicle-page-header">
+            <div className="page-header">
 
                 <div>
-                    <h1>Purchase Register</h1>
+
+                    <h1>
+                        PURCHASE REGISTER
+                    </h1>
 
                     <p>
                         Record and manage purchase entries
                     </p>
+
                 </div>
 
                 <button
+                    type="button"
                     className="secondary-button"
                     onClick={loadPurchases}
+                    disabled={loading || saving}
                 >
-                    Refresh
+                    {loading
+                        ? "Loading..."
+                        : "Refresh"}
                 </button>
 
             </div>
 
 
-            {/* FORM */}
+            {/* =========================
+                SUCCESS
+            ========================= */}
 
-            <div className="register-card">
+            {success && (
 
-                <div className="register-card-header">
+                <div
+                    className="success-message"
+                    style={{
+                        marginBottom: "20px"
+                    }}
+                >
+                    {success}
+                </div>
 
-                    <h2>
-                        {editingId
-                            ? "Edit Purchase Entry"
-                            : "New Purchase Entry"}
-                    </h2>
+            )}
 
-                    <p>
-                        Enter purchase weight and commodity details
-                    </p>
+
+            {/* =========================
+                ERROR
+            ========================= */}
+
+            {error && (
+
+                <div
+                    className="error-message"
+                    style={{
+                        marginBottom: "20px"
+                    }}
+                >
+                    {error}
+                </div>
+
+            )}
+
+
+            {/* =========================
+                FORM CARD
+            ========================= */}
+
+            <div className="card">
+
+                <div className="section-header">
+
+                    <div>
+
+                        <h2>
+                            {editingId
+                                ? "Edit Purchase Entry"
+                                : "New Purchase Entry"}
+                        </h2>
+
+                        <p>
+                            Enter purchase weight and commodity details
+                        </p>
+
+                    </div>
 
                 </div>
 
 
                 <form
-                    className="vehicle-form"
                     onSubmit={handleSubmit}
+                    className="form-grid"
                 >
 
-                    <div className="form-grid">
+                    {/* DATE */}
 
-                        {/* DATE */}
+                    <div className="form-group">
 
-                        <div className="form-group">
+                        <label>
+                            Date
+                        </label>
 
-                            <label>Date</label>
+                        <input
+                            type="date"
+                            name="date"
+                            value={form.date}
+                            onChange={handleChange}
+                            required
+                        />
+
+                    </div>
+
+
+                    {/* NET WEIGHT */}
+
+                    <div className="form-group">
+
+                        <label>
+                            Net Weight
+                        </label>
+
+                        <div
+                            style={{
+                                position: "relative"
+                            }}
+                        >
 
                             <input
-                                type="date"
-                                name="date"
-                                value={form.date}
+                                type="number"
+                                name="netWeight"
+                                value={form.netWeight}
                                 onChange={handleChange}
+                                placeholder="Enter net weight"
+                                min="0"
+                                step="0.01"
+                                required
+                                style={{
+                                    paddingRight: "55px"
+                                }}
                             />
 
-                        </div>
-
-
-                        {/* NET WEIGHT */}
-
-                        <div className="form-group">
-
-                            <label>Net Weight</label>
-
-                            <div className="weight-field">
-
-                                <input
-                                    type="number"
-                                    name="netWeight"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="Enter net weight"
-                                    value={form.netWeight}
-                                    onChange={handleChange}
-                                />
-
-                                <span className="weight-unit">
-                                    KG
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        {/* COMMODITY */}
-
-                        <div className="form-group">
-
-                            <label>Commodity</label>
-
-                            <select
-                                name="commodity"
-                                value={form.commodity}
-                                onChange={handleChange}
+                            <span
+                                style={{
+                                    position: "absolute",
+                                    right: "14px",
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    color: "#6b7280",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    pointerEvents: "none"
+                                }}
                             >
-
-                                <option value="">
-                                    Select commodity
-                                </option>
-
-                                {commodities.map(item => (
-                                    <option
-                                        key={item}
-                                        value={item}
-                                    >
-                                        {item}
-                                    </option>
-                                ))}
-
-                            </select>
-
-                        </div>
-
-
-                        {/* REMARKS */}
-
-                        <div className="form-group full-width">
-
-                            <label>Remarks</label>
-
-                            <textarea
-                                name="remarks"
-                                placeholder="Enter remarks"
-                                value={form.remarks}
-                                onChange={handleChange}
-                            />
+                                KG
+                            </span>
 
                         </div>
 
                     </div>
 
 
+                    {/* COMMODITY */}
+
+                    <div className="form-group">
+
+                        <label>
+                            Commodity
+                        </label>
+
+                        <select
+                            name="commodity"
+                            value={form.commodity}
+                            onChange={handleChange}
+                            required
+                        >
+
+                            <option value="">
+                                Select commodity
+                            </option>
+
+                            {commodities.map(
+                                commodity => (
+
+                                    <option
+                                        key={commodity}
+                                        value={commodity}
+                                    >
+                                        {commodity}
+                                    </option>
+
+                                )
+                            )}
+
+                        </select>
+
+                    </div>
+
+
+                    {/* REMARKS */}
+
+                    <div
+                        className="form-group"
+                        style={{
+                            gridColumn: "1 / -1"
+                        }}
+                    >
+
+                        <label>
+                            Remarks
+                        </label>
+
+                        <textarea
+                            name="remarks"
+                            value={form.remarks}
+                            onChange={handleChange}
+                            placeholder="Enter remarks"
+                            rows="3"
+                        />
+
+                    </div>
+
+
                     {/* BUTTONS */}
 
-                    <div 
-                    style={{
+                    <div
+                        style={{
                             gridColumn: "1 / -1",
                             display: "flex",
                             gap: "10px",
                             flexWrap: "wrap"
-                        }}>
+                        }}
+                    >
 
                         <button
                             type="submit"
                             className="primary-button"
+                            disabled={saving}
                         >
-                            {editingId
+
+                            {saving
+                                ? "Saving..."
+                                : editingId
                                 ? "Update Purchase"
                                 : "Save Purchase"}
+
                         </button>
+
 
                         <button
                             type="button"
                             className="secondary-button"
                             onClick={clearForm}
+                            disabled={saving}
                         >
                             Clear
                         </button>
@@ -394,35 +682,109 @@ function PurchaseRegister() {
             </div>
 
 
-            {/* SUMMARY */}
+            {/* =========================
+                SUMMARY CARDS
+            ========================= */}
 
-            <div className="dashboard-section">
+            <div
+                className="card"
+                style={{
+                    marginTop: "25px"
+                }}
+            >
 
-                <h2>Purchase Summary</h2>
+                <div className="section-header">
 
-                <div className="summary-grid">
+                    <div>
 
-                    <div className="summary-box">
+                        <h2>
+                            Purchase Summary
+                        </h2>
 
-                        <span>
+                        <p>
+                            Overview of the currently displayed purchase entries
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: "16px"
+                    }}
+                >
+
+                    <div
+                        style={{
+                            padding: "20px",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "10px",
+                            background: "#f8fafc"
+                        }}
+                    >
+
+                        <div
+                            style={{
+                                color: "#6b7280",
+                                fontSize: "13px",
+                                marginBottom: "8px"
+                            }}
+                        >
                             Total Entries
-                        </span>
+                        </div>
 
-                        <strong>
+                        <strong
+                            style={{
+                                fontSize: "26px",
+                                color: "#1f2937"
+                            }}
+                        >
                             {filteredPurchases.length}
                         </strong>
 
                     </div>
 
 
-                    <div className="summary-box">
+                    <div
+                        style={{
+                            padding: "20px",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "10px",
+                            background: "#f8fafc"
+                        }}
+                    >
 
-                        <span>
+                        <div
+                            style={{
+                                color: "#6b7280",
+                                fontSize: "13px",
+                                marginBottom: "8px"
+                            }}
+                        >
                             Total Net Weight
-                        </span>
+                        </div>
 
-                        <strong>
-                            {totalPurchaseWeight.toFixed(2)} KG
+                        <strong
+                            style={{
+                                fontSize: "26px",
+                                color: "#1f2937"
+                            }}
+                        >
+                            {totalPurchaseWeight.toFixed(2)}
+                            {" "}
+                            <span
+                                style={{
+                                    fontSize: "14px",
+                                    fontWeight: "600"
+                                }}
+                            >
+                                KG
+                            </span>
                         </strong>
 
                     </div>
@@ -432,11 +794,18 @@ function PurchaseRegister() {
             </div>
 
 
-            {/* TABLE */}
+            {/* =========================
+                PURCHASE ENTRIES
+            ========================= */}
 
-            <div className="entries-card">
+            <div
+                className="card"
+                style={{
+                    marginTop: "25px"
+                }}
+            >
 
-                <div className="entries-header">
+                <div className="section-header">
 
                     <div>
 
@@ -444,26 +813,28 @@ function PurchaseRegister() {
                             Purchase Entries
                         </h2>
 
-                        <p
-                            style={{
-                                color: "#6b7280",
-                                fontSize: "14px",
-                                marginTop: "5px"
-                            }}
-                        >
+                        <p>
                             {filteredPurchases.length} entries
                         </p>
 
                     </div>
 
                     <input
-                        className="search-box"
                         type="text"
-                        placeholder="Search commodity, date, remarks..."
                         value={search}
                         onChange={event =>
                             setSearch(event.target.value)
                         }
+                        placeholder="Search purchase entries..."
+                        style={{
+                            width: "280px",
+                            maxWidth: "100%",
+                            padding: "10px 13px",
+                            border: "1px solid #d5d9df",
+                            borderRadius: "8px",
+                            outline: "none",
+                            boxSizing: "border-box"
+                        }}
                     />
 
                 </div>
@@ -471,13 +842,25 @@ function PurchaseRegister() {
 
                 {loading ? (
 
-                    <div className="loading">
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "35px",
+                            color: "#6b7280"
+                        }}
+                    >
                         Loading purchase entries...
                     </div>
 
                 ) : filteredPurchases.length === 0 ? (
 
-                    <div className="empty-state">
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "35px",
+                            color: "#6b7280"
+                        }}
+                    >
                         No purchase entries found.
                     </div>
 
@@ -490,70 +873,106 @@ function PurchaseRegister() {
                             <thead>
 
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Net Weight</th>
-                                    <th>Commodity</th>
-                                    <th>Remarks</th>
-                                    <th>Actions</th>
+
+                                    <th>
+                                        Date
+                                    </th>
+
+                                    <th>
+                                        Net Weight
+                                    </th>
+
+                                    <th>
+                                        Commodity
+                                    </th>
+
+                                    <th>
+                                        Remarks
+                                    </th>
+
+                                    <th>
+                                        Actions
+                                    </th>
+
                                 </tr>
 
                             </thead>
 
                             <tbody>
 
-                                {filteredPurchases.map(purchase => (
+                                {filteredPurchases
+                                    .slice()
+                                    .reverse()
+                                    .map(purchase => (
 
-                                    <tr key={purchase.id}>
+                                        <tr
+                                            key={purchase.id}
+                                        >
 
-                                        <td>
-                                            {purchase.date || "-"}
-                                        </td>
+                                            <td>
+                                                {purchase.date || "-"}
+                                            </td>
 
-                                        <td>
-                                            <strong>
-                                                {purchase.netWeight || 0} KG
-                                            </strong>
-                                        </td>
+                                            <td>
 
-                                        <td>
-                                            {purchase.commodity || "-"}
-                                        </td>
+                                                <strong>
+                                                    {Number(
+                                                        purchase.netWeight || 0
+                                                    ).toFixed(2)}
+                                                    {" "}KG
+                                                </strong>
 
-                                        <td>
-                                            {purchase.remarks || "-"}
-                                        </td>
+                                            </td>
 
-                                        <td>
+                                            <td>
+                                                {purchase.commodity || "-"}
+                                            </td>
 
-                                            <div className="action-buttons">
+                                            <td>
+                                                {purchase.remarks || "-"}
+                                            </td>
 
-                                                <button
-                                                    className="btn-edit"
-                                                    onClick={() =>
-                                                        startEdit(purchase)
-                                                    }
+                                            <td>
+
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        gap: "7px",
+                                                        flexWrap: "wrap"
+                                                    }}
                                                 >
-                                                    Edit
-                                                </button>
 
-                                                <button
-                                                    className="btn-delete"
-                                                    onClick={() =>
-                                                        deletePurchase(
-                                                            purchase.id
-                                                        )
-                                                    }
-                                                >
-                                                    Delete
-                                                </button>
+                                                    <button
+                                                        type="button"
+                                                        className="secondary-button"
+                                                        onClick={() =>
+                                                            startEdit(
+                                                                purchase
+                                                            )
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </button>
 
-                                            </div>
+                                                    <button
+                                                        type="button"
+                                                        className="danger-button"
+                                                        onClick={() =>
+                                                            deletePurchase(
+                                                                purchase.id
+                                                            )
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
 
-                                        </td>
+                                                </div>
 
-                                    </tr>
+                                            </td>
 
-                                ))}
+                                        </tr>
+
+                                    ))}
 
                             </tbody>
 

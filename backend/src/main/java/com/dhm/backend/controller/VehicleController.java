@@ -6,6 +6,7 @@ import com.dhm.backend.repository.VehicleRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -18,43 +19,153 @@ public class VehicleController {
         this.vehicleRepository = vehicleRepository;
     }
 
-    // Get all vehicles
+    // ==============================
+    // GET ALL VEHICLES
+    // ==============================
+
     @GetMapping
     public List<Vehicle> getAllVehicles() {
         return vehicleRepository.findAll();
     }
 
-    // Get vehicle by ID
+    // ==============================
+    // GET VEHICLE BY ID
+    // ==============================
+
     @GetMapping("/{id}")
-    public ResponseEntity<Vehicle> getVehicleById(@PathVariable Long id) {
+    public ResponseEntity<Vehicle> getVehicleById(
+            @PathVariable Long id) {
 
         return vehicleRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Add vehicle
+    // ==============================
+    // CREATE VEHICLE
+    // ==============================
+
     @PostMapping
-    public Vehicle createVehicle(@RequestBody Vehicle vehicle) {
-        return vehicleRepository.save(vehicle);
+    public ResponseEntity<?> createVehicle(
+            @RequestBody Vehicle vehicle) {
+
+        if (vehicle.getDate() == null) {
+            return ResponseEntity.badRequest()
+                    .body("Date is required.");
+        }
+
+        if (vehicle.getVehicleNo() == null ||
+                vehicle.getVehicleNo().trim().isEmpty()) {
+
+            return ResponseEntity.badRequest()
+                    .body("Vehicle number is required.");
+        }
+
+        if (vehicle.getGrossWeight() == null ||
+                vehicle.getGrossWeight().compareTo(BigDecimal.ZERO) <= 0) {
+
+            return ResponseEntity.badRequest()
+                    .body("Gross weight must be greater than zero.");
+        }
+
+        if (vehicle.getTareWeight() == null ||
+                vehicle.getTareWeight().compareTo(BigDecimal.ZERO) < 0) {
+
+            return ResponseEntity.badRequest()
+                    .body("Tare weight cannot be negative.");
+        }
+
+        if (vehicle.getTareWeight()
+                .compareTo(vehicle.getGrossWeight()) >= 0) {
+
+            return ResponseEntity.badRequest()
+                    .body("Tare weight must be less than gross weight.");
+        }
+
+        vehicle.setVehicleNo(
+                vehicle.getVehicleNo().trim()
+        );
+
+        Vehicle savedVehicle =
+                vehicleRepository.save(vehicle);
+
+        return ResponseEntity.ok(savedVehicle);
     }
 
-    // Update vehicle
+    // ==============================
+    // UPDATE VEHICLE
+    // ==============================
+
     @PutMapping("/{id}")
-    public ResponseEntity<Vehicle> updateVehicle(
+    public ResponseEntity<?> updateVehicle(
             @PathVariable Long id,
             @RequestBody Vehicle updatedVehicle) {
 
         return vehicleRepository.findById(id)
                 .map(vehicle -> {
 
+                    if (updatedVehicle.getDate() == null) {
+                        return ResponseEntity.badRequest()
+                                .body("Date is required.");
+                    }
+
+                    if (updatedVehicle.getVehicleNo() == null ||
+                            updatedVehicle.getVehicleNo()
+                                    .trim()
+                                    .isEmpty()) {
+
+                        return ResponseEntity.badRequest()
+                                .body("Vehicle number is required.");
+                    }
+
+                    if (updatedVehicle.getGrossWeight() == null ||
+                            updatedVehicle.getGrossWeight()
+                                    .compareTo(BigDecimal.ZERO) <= 0) {
+
+                        return ResponseEntity.badRequest()
+                                .body("Gross weight must be greater than zero.");
+                    }
+
+                    if (updatedVehicle.getTareWeight() == null ||
+                            updatedVehicle.getTareWeight()
+                                    .compareTo(BigDecimal.ZERO) < 0) {
+
+                        return ResponseEntity.badRequest()
+                                .body("Tare weight cannot be negative.");
+                    }
+
+                    if (updatedVehicle.getTareWeight()
+                            .compareTo(updatedVehicle.getGrossWeight()) >= 0) {
+
+                        return ResponseEntity.badRequest()
+                                .body("Tare weight must be less than gross weight.");
+                    }
+
                     vehicle.setDate(updatedVehicle.getDate());
-                    vehicle.setVehicleNo(updatedVehicle.getVehicleNo());
-                    vehicle.setGrossWeight(updatedVehicle.getGrossWeight());
-                    vehicle.setTareWeight(updatedVehicle.getTareWeight());
-                    vehicle.setLocal(updatedVehicle.isLocal());
-                    vehicle.setImported(updatedVehicle.isImported());
-                    vehicle.setRemarks(updatedVehicle.getRemarks());
+
+                    vehicle.setVehicleNo(
+                            updatedVehicle.getVehicleNo().trim()
+                    );
+
+                    vehicle.setGrossWeight(
+                            updatedVehicle.getGrossWeight()
+                    );
+
+                    vehicle.setTareWeight(
+                            updatedVehicle.getTareWeight()
+                    );
+
+                    vehicle.setLocal(
+                            updatedVehicle.isLocal()
+                    );
+
+                    vehicle.setImported(
+                            updatedVehicle.isImported()
+                    );
+
+                    vehicle.setRemarks(
+                            updatedVehicle.getRemarks()
+                    );
 
                     return ResponseEntity.ok(
                             vehicleRepository.save(vehicle)
@@ -63,9 +174,13 @@ public class VehicleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Delete vehicle
+    // ==============================
+    // DELETE VEHICLE
+    // ==============================
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteVehicle(
+            @PathVariable Long id) {
 
         if (!vehicleRepository.existsById(id)) {
             return ResponseEntity.notFound().build();

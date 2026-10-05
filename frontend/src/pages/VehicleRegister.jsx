@@ -243,6 +243,9 @@ function VehicleRegister() {
 
      async function handleSubmit(event) {
     event.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
     if (!form.date) {
         alert("Please select a date.");
@@ -328,7 +331,7 @@ function VehicleRegister() {
            SEND TO SALES REGISTER
         ========================================== */
 
-        if (!editingId && form.registerType === "sales") {
+        if (!editingId && form.registerType === "SALES") {
 
             const salesPayload = {
                 date: form.date,
@@ -351,7 +354,7 @@ function VehicleRegister() {
                 "Vehicle saved successfully and added to Sales Register."
             );
 
-            clearForm();
+            resetForm();
             await loadVehicles();
 
             navigate("/sales-register");
@@ -364,7 +367,7 @@ function VehicleRegister() {
            SEND TO PURCHASE REGISTER
         ========================================== */
 
-        if (!editingId && form.registerType === "purchase") {
+        if (!editingId && form.registerType === "PURCHASE") {
 
             const purchasePayload = {
                 date: form.date,
@@ -385,7 +388,7 @@ function VehicleRegister() {
                 "Vehicle saved successfully and added to Purchase Register."
             );
 
-            clearForm();
+            resetForm();
             await loadVehicles();
 
             navigate("/purchase-register");
@@ -414,6 +417,8 @@ function VehicleRegister() {
             error.response?.data?.message ||
             "Unable to save the entry. Please check the backend."
         );
+    }finally {
+        setLoading(false);
     }
 }
 
