@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from  "../api";
 import { useEffect, useState } from "react";
 
 function MainLayout() {
@@ -18,8 +18,8 @@ function MainLayout() {
 
         try {
 
-            const response = await axios.get(
-                "http://localhost:8090/api/auth/me",
+            const response = await api.get(
+                "https://dhm-backend.onrender.com",
                 {
                     withCredentials: true
                 }
@@ -46,8 +46,8 @@ function MainLayout() {
 
         try {
 
-            await axios.post(
-                "http://localhost:8090/logout",
+            await api.post(
+                "https://dhm-backend.onrender.com/logout",
                 {},
                 {
                     withCredentials: true

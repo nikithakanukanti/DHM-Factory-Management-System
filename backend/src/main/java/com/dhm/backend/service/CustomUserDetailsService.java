@@ -1,7 +1,7 @@
 package com.dhm.backend.service;
 
 import com.dhm.backend.entity.User;
-import com.dhm.backend.repository.UserRepository;
+import com.dhm.backend.repository.UserRepo;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,9 +15,9 @@ import java.util.Collections;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserRepo userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(UserRepo userRepository) {
         this.userRepository = userRepository;
     }
 

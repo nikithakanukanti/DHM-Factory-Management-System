@@ -1,17 +1,19 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
-
-const API_URL = "http://localhost:8090";
+import api from "../api";
 
 function Reports() {
-    const [activeReport, setActiveReport] = useState("overview");
     const [loading, setLoading] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     const [stats, setStats] = useState({
         vehicles: 0,
         sales: 0,
         purchases: 0,
-        reactor: 0
+        reactor: 0,
+        totalSalesWeightKg: 0,
+        totalPurchasesWeightKg: 0
     });
 
     const [dateFrom, setDateFrom] = useState("");
@@ -23,47 +25,23 @@ function Reports() {
 
     async function loadReportData() {
         setLoading(true);
+        setError("");
 
         try {
-            const results = await Promise.allSettled([
-                axios.get(`${API_URL}/api/vehicles`, {
-                    withCredentials: true
-                }),
-                axios.get(`${API_URL}/api/sales`, {
-                    withCredentials: true
-                }),
-                axios.get(`${API_URL}/api/purchases`, {
-                    withCredentials: true
-                }),
-                axios.get(`${API_URL}/api/reactor-timings`, {
-                    withCredentials: true
-                })
-            ]);
-
-            setStats({
-                vehicles:
-                    results[0].status === "fulfilled"
-                        ? results[0].value.data.length
-                        : 0,
-
-                sales:
-                    results[1].status === "fulfilled"
-                        ? results[1].value.data.length
-                        : 0,
-
-                purchases:
-                    results[2].status === "fulfilled"
-                        ? results[2].value.data.length
-                        : 0,
-
-                reactor:
-                    results[3].status === "fulfilled"
-                        ? results[3].value.data.length
-                        : 0
-            });
-
-        } catch (error) {
-            console.error("Report loading error:", error);
+            const res = await api.get("/api/dashboard/stats");
+            if (res.data) {
+                setStats({
+                    vehicles: res.data.vehicles || 0,
+                    sales: res.data.sales || 0,
+                    purchases: res.data.purchases || 0,
+                    reactor: res.data.reactorTimings || 0,
+                    totalSalesWeightKg: res.data.totalSalesWeightKg || 0,
+                    totalPurchasesWeightKg: res.data.totalPurchasesWeightKg || 0
+                });
+            }
+        } catch (err) {
+            console.error("Report loading error:", err);
+            setError("Unable to load latest metrics.");
         } finally {
             setLoading(false);
         }
@@ -71,609 +49,221 @@ function Reports() {
 
     async function exportExcel() {
         try {
-            const response = await axios.get(
-                `${API_URL}/api/reports/export/excel`,
-                {
-                    withCredentials: true,
-                    responseType: "blob"
-                }
-            );
+            setExporting(true);
+            setError("");
+            setSuccess("");
 
-            const url = window.URL.createObjectURL(
-                new Blob([response.data], {
-                    type:
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                })
-            );
+            const params = new URLSearchParams();
+            if (dateFrom) params.append("from", dateFrom);
+            if (dateTo) params.append("to", dateTo);
+            const qs = params.toString() ? `?${params.toString()}` : "";
 
+            const response = await api.get(`/api/reports/export/excel${qs}`, {
+                responseType: "blob"
+            });
+
+            const blob = new Blob([response.data], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            });
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
-
             link.href = url;
-            link.download = "DHM_Report.xlsx";
-
+            link.download = (dateFrom && dateTo) ? `DHM_Report_${dateFrom}_to_${dateTo}.xlsx` : "DHM_Report.xlsx";
             document.body.appendChild(link);
             link.click();
             link.remove();
-
             window.URL.revokeObjectURL(url);
 
-        } catch (error) {
-            console.error("Excel export failed:", error);
-            alert("Unable to export Excel report.");
+            setSuccess("Excel report generated and downloaded successfully.");
+        } catch (err) {
+            console.error("Excel export failed:", err);
+            setError("Unable to export Excel report. Please verify connection.");
+        } finally {
+            setExporting(false);
         }
     }
 
     async function exportPdf() {
         try {
-            const response = await axios.get(
-                `${API_URL}/api/reports/export/pdf`,
-                {
-                    withCredentials: true,
-                    responseType: "blob"
-                }
-            );
+            setExporting(true);
+            setError("");
+            setSuccess("");
 
-            const url = window.URL.createObjectURL(
-                new Blob([response.data], {
-                    type: "application/pdf"
-                })
-            );
+            const params = new URLSearchParams();
+            if (dateFrom) params.append("from", dateFrom);
+            if (dateTo) params.append("to", dateTo);
+            const qs = params.toString() ? `?${params.toString()}` : "";
 
+            const response = await api.get(`/api/reports/export/pdf${qs}`, {
+                responseType: "blob"
+            });
+
+            const blob = new Blob([response.data], { type: "application/pdf" });
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
-
             link.href = url;
-            link.download = "DHM_Report.pdf";
-
+            link.download = (dateFrom && dateTo) ? `DHM_Report_${dateFrom}_to_${dateTo}.pdf` : "DHM_Report.pdf";
             document.body.appendChild(link);
             link.click();
             link.remove();
-
             window.URL.revokeObjectURL(url);
 
-        } catch (error) {
-            console.error("PDF export failed:", error);
-            alert("Unable to export PDF report.");
+            setSuccess("PDF report generated and downloaded successfully.");
+        } catch (err) {
+            console.error("PDF export failed:", err);
+            setError("Unable to export PDF report. Please verify connection.");
+        } finally {
+            setExporting(false);
         }
     }
 
     function clearDates() {
         setDateFrom("");
         setDateTo("");
+        setError("");
+        setSuccess("");
     }
 
     return (
         <div className="reports-page">
 
             {/* PAGE HEADER */}
-            <div className="reports-header">
-
+            <div className="page-header">
                 <div>
-                    <span className="page-kicker">
-                        ADMINISTRATION / REPORTS
-                    </span>
-
-                    <h1>
-                        Reports & Analytics
-                    </h1>
-
-                    <p>
-                        View factory records and generate
-                        downloadable management reports.
-                    </p>
+                    <h1>OPERATIONS & EXPORT REPORTS</h1>
+                    <p>Generate filtered Excel and PDF reports for audit & client review</p>
                 </div>
 
-                <div className="reports-header-status">
-                    <span className="status-dot"></span>
-
-                    <div>
-                        <strong>
-                            Reporting System
-                        </strong>
-
-                        <small>
-                            Ready
-                        </small>
-                    </div>
-                </div>
-
+                <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={loadReportData}
+                    disabled={loading || exporting}
+                >
+                    {loading ? "Loading..." : "Refresh Stats"}
+                </button>
             </div>
 
-            {/* REPORT TABS */}
-            <div className="report-tabs">
+            {/* NOTIFICATIONS */}
+            {success && (
+                <div className="success-message" style={{ marginBottom: "20px" }}>
+                    ✓ {success}
+                </div>
+            )}
 
-                <button
-                    className={
-                        activeReport === "overview"
-                            ? "report-tab active"
-                            : "report-tab"
-                    }
-                    onClick={() =>
-                        setActiveReport("overview")
-                    }
-                >
-                    <span>▦</span>
-                    Overview
-                </button>
+            {error && (
+                <div className="error-message" style={{ marginBottom: "20px" }}>
+                    ⚠ {error}
+                </div>
+            )}
 
-                <button
-                    className={
-                        activeReport === "vehicle"
-                            ? "report-tab active"
-                            : "report-tab"
-                    }
-                    onClick={() =>
-                        setActiveReport("vehicle")
-                    }
-                >
-                    <span>🚛</span>
-                    Vehicle
-                </button>
-
-                <button
-                    className={
-                        activeReport === "sales"
-                            ? "report-tab active"
-                            : "report-tab"
-                    }
-                    onClick={() =>
-                        setActiveReport("sales")
-                    }
-                >
-                    <span>↗</span>
-                    Sales
-                </button>
-
-                <button
-                    className={
-                        activeReport === "purchase"
-                            ? "report-tab active"
-                            : "report-tab"
-                    }
-                    onClick={() =>
-                        setActiveReport("purchase")
-                    }
-                >
-                    <span>↙</span>
-                    Purchase
-                </button>
-
-                <button
-                    className={
-                        activeReport === "reactor"
-                            ? "report-tab active"
-                            : "report-tab"
-                    }
-                    onClick={() =>
-                        setActiveReport("reactor")
-                    }
-                >
-                    <span>◷</span>
-                    Reactor Timing
-                </button>
-
-            </div>
-
-            {/* FILTER CARD */}
-            <div className="report-filter-card">
-
-                <div className="filter-heading">
-
-                    <div className="filter-icon">
-                        ⚙
-                    </div>
-
+            {/* EXPORT CONTROL CARD */}
+            <div className="card">
+                <div className="section-header">
                     <div>
-                        <h3>
-                            Report Filters
-                        </h3>
-
-                        <p>
-                            Select a date range for your report.
-                        </p>
+                        <h2>Export Parameters</h2>
+                        <p>Filter by date range or export complete factory history</p>
                     </div>
-
                 </div>
 
-                <div className="filter-fields">
-
-                    <div className="report-date-field">
-
-                        <label>
-                            FROM DATE
-                        </label>
-
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", alignItems: "end" }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                        <label>Start Date (From)</label>
                         <input
                             type="date"
                             value={dateFrom}
-                            onChange={(e) =>
-                                setDateFrom(e.target.value)
-                            }
+                            onChange={(e) => setDateFrom(e.target.value)}
                         />
-
                     </div>
 
-                    <div className="report-date-field">
-
-                        <label>
-                            TO DATE
-                        </label>
-
+                    <div className="form-group" style={{ margin: 0 }}>
+                        <label>End Date (To)</label>
                         <input
                             type="date"
                             value={dateTo}
-                            onChange={(e) =>
-                                setDateTo(e.target.value)
-                            }
+                            onChange={(e) => setDateTo(e.target.value)}
                         />
-
                     </div>
 
-                    <button
-                        className="filter-clear-button"
-                        onClick={clearDates}
-                    >
-                        Clear
-                    </button>
-
-                </div>
-
-            </div>
-
-            {/* STATISTICS */}
-            <div className="report-stat-grid">
-
-                <div className="report-stat-card">
-
-                    <div className="report-stat-top">
-                        <span>VEHICLE RECORDS</span>
-
-                        <div className="report-stat-icon blue">
-                            🚛
-                        </div>
-                    </div>
-
-                    <strong>
-                        {loading ? "..." : stats.vehicles}
-                    </strong>
-
-                    <p>
-                        Total vehicle entries
-                    </p>
-
-                    <div className="report-progress">
-                        <span style={{ width: "78%" }}></span>
-                    </div>
-
-                </div>
-
-                <div className="report-stat-card">
-
-                    <div className="report-stat-top">
-                        <span>SALES RECORDS</span>
-
-                        <div className="report-stat-icon green">
-                            ↗
-                        </div>
-                    </div>
-
-                    <strong>
-                        {loading ? "..." : stats.sales}
-                    </strong>
-
-                    <p>
-                        Total sales entries
-                    </p>
-
-                    <div className="report-progress green">
-                        <span style={{ width: "64%" }}></span>
-                    </div>
-
-                </div>
-
-                <div className="report-stat-card">
-
-                    <div className="report-stat-top">
-                        <span>PURCHASE RECORDS</span>
-
-                        <div className="report-stat-icon orange">
-                            ↙
-                        </div>
-                    </div>
-
-                    <strong>
-                        {loading ? "..." : stats.purchases}
-                    </strong>
-
-                    <p>
-                        Total purchase entries
-                    </p>
-
-                    <div className="report-progress orange">
-                        <span style={{ width: "52%" }}></span>
-                    </div>
-
-                </div>
-
-                <div className="report-stat-card">
-
-                    <div className="report-stat-top">
-                        <span>REACTOR RECORDS</span>
-
-                        <div className="report-stat-icon purple">
-                            ◷
-                        </div>
-                    </div>
-
-                    <strong>
-                        {loading ? "..." : stats.reactor}
-                    </strong>
-
-                    <p>
-                        Total timing entries
-                    </p>
-
-                    <div className="report-progress purple">
-                        <span style={{ width: "43%" }}></span>
-                    </div>
-
-                </div>
-
-            </div>
-
-            {/* MAIN REPORT AREA */}
-            <div className="reports-content-grid">
-
-                {/* REPORT PREVIEW */}
-                <div className="report-preview-card">
-
-                    <div className="report-card-header">
-
-                        <div>
-                            <span className="panel-kicker">
-                                REPORT PREVIEW
-                            </span>
-
-                            <h2>
-                                {activeReport === "overview" &&
-                                    "Factory Summary"}
-
-                                {activeReport === "vehicle" &&
-                                    "Vehicle Register"}
-
-                                {activeReport === "sales" &&
-                                    "Sales Register"}
-
-                                {activeReport === "purchase" &&
-                                    "Purchase Register"}
-
-                                {activeReport === "reactor" &&
-                                    "Reactor Timing Register"}
-                            </h2>
-                        </div>
-
-                        <span className="preview-badge">
-                            LIVE DATA
-                        </span>
-
-                    </div>
-
-                    <div className="report-preview-body">
-
-                        {activeReport === "overview" && (
-                            <>
-
-                                <div className="summary-row">
-                                    <div>
-                                        <span>
-                                            Vehicle Entries
-                                        </span>
-
-                                        <strong>
-                                            {stats.vehicles}
-                                        </strong>
-                                    </div>
-
-                                    <div>
-                                        <span>
-                                            Sales Entries
-                                        </span>
-
-                                        <strong>
-                                            {stats.sales}
-                                        </strong>
-                                    </div>
-                                </div>
-
-                                <div className="summary-row">
-                                    <div>
-                                        <span>
-                                            Purchase Entries
-                                        </span>
-
-                                        <strong>
-                                            {stats.purchases}
-                                        </strong>
-                                    </div>
-
-                                    <div>
-                                        <span>
-                                            Reactor Timings
-                                        </span>
-
-                                        <strong>
-                                            {stats.reactor}
-                                        </strong>
-                                    </div>
-                                </div>
-
-                            </>
-                        )}
-
-                        {activeReport === "vehicle" && (
-                            <div className="report-placeholder">
-
-                                <div>🚛</div>
-
-                                <h3>
-                                    Vehicle Register Report
-                                </h3>
-
-                                <p>
-                                    The exported report contains
-                                    vehicle date, vehicle number,
-                                    gross weight, tare weight,
-                                    net weight, local/imported
-                                    status and remarks.
-                                </p>
-
-                            </div>
-                        )}
-
-                        {activeReport === "sales" && (
-                            <div className="report-placeholder">
-
-                                <div>↗</div>
-
-                                <h3>
-                                    Sales Register Report
-                                </h3>
-
-                                <p>
-                                    The exported report contains
-                                    sales date, vehicle number,
-                                    weights, commodity and remarks.
-                                </p>
-
-                            </div>
-                        )}
-
-                        {activeReport === "purchase" && (
-                            <div className="report-placeholder">
-
-                                <div>↙</div>
-
-                                <h3>
-                                    Purchase Register Report
-                                </h3>
-
-                                <p>
-                                    The exported report contains
-                                    purchase date, net weight,
-                                    commodity and remarks.
-                                </p>
-
-                            </div>
-                        )}
-
-                        {activeReport === "reactor" && (
-                            <div className="report-placeholder">
-
-                                <div>◷</div>
-
-                                <h3>
-                                    Reactor Timing Report
-                                </h3>
-
-                                <p>
-                                    The exported report contains
-                                    reactor timing records.
-                                </p>
-
-                            </div>
-                        )}
-
-                    </div>
-
-                </div>
-
-                {/* EXPORT PANEL */}
-                <div className="export-panel">
-
-                    <div className="export-panel-header">
-
-                        <div className="export-big-icon">
-                            ↓
-                        </div>
-
-                        <h2>
-                            Export Reports
-                        </h2>
-
-                        <p>
-                            Download complete factory
-                            records for management use.
-                        </p>
-
-                    </div>
-
-                    <div className="export-options">
-
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         <button
-                            className="export-option excel"
+                            type="button"
+                            className="primary-button"
                             onClick={exportExcel}
+                            disabled={exporting}
+                            style={{ background: "#15803d", borderColor: "#166534" }}
                         >
-
-                            <div className="export-file-icon">
-                                XLS
-                            </div>
-
-                            <div>
-                                <strong>
-                                    Excel Report
-                                </strong>
-
-                                <small>
-                                    Complete workbook
-                                </small>
-                            </div>
-
-                            <span>
-                                →
-                            </span>
-
+                            📊 Export Excel
                         </button>
 
                         <button
-                            className="export-option pdf"
+                            type="button"
+                            className="primary-button"
                             onClick={exportPdf}
+                            disabled={exporting}
+                            style={{ background: "#b91c1c", borderColor: "#991b1b" }}
                         >
-
-                            <div className="export-file-icon">
-                                PDF
-                            </div>
-
-                            <div>
-                                <strong>
-                                    PDF Report
-                                </strong>
-
-                                <small>
-                                    Printable document
-                                </small>
-                            </div>
-
-                            <span>
-                                →
-                            </span>
-
+                            📑 Export PDF
                         </button>
 
+                        {(dateFrom || dateTo) && (
+                            <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={clearDates}
+                                disabled={exporting}
+                            >
+                                Clear Dates
+                            </button>
+                        )}
                     </div>
-
-                    <div className="export-note">
-
-                        <span>ⓘ</span>
-
-                        <p>
-                            Reports contain the latest
-                            available records from the
-                            DHM database.
-                        </p>
-
-                    </div>
-
                 </div>
 
+                {dateFrom && dateTo && (
+                    <div style={{ marginTop: "16px", fontSize: "13px", color: "#475569" }}>
+                        Active filter: <strong>{dateFrom}</strong> to <strong>{dateTo}</strong>
+                    </div>
+                )}
+            </div>
+
+            {/* METRICS SUMMARY */}
+            <div className="card" style={{ marginTop: "25px" }}>
+                <div className="section-header">
+                    <div>
+                        <h2>System Record Counts</h2>
+                        <p>Total historical entries captured across modules</p>
+                    </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Total Vehicles Logged</div>
+                        <strong style={{ fontSize: "28px", color: "#1e293b" }}>{stats.vehicles}</strong>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Weighbridge Entries</div>
+                    </div>
+
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Total Sales Dispatches</div>
+                        <strong style={{ fontSize: "28px", color: "#0369a1" }}>{stats.sales}</strong>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                            {Number(stats.totalSalesWeightKg).toLocaleString()} KG Dispatched
+                        </div>
+                    </div>
+
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Total Raw Material Inwards</div>
+                        <strong style={{ fontSize: "28px", color: "#0f766e" }}>{stats.purchases}</strong>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                            {Number(stats.totalPurchasesWeightKg).toLocaleString()} KG Received
+                        </div>
+                    </div>
+
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Reactor Batches</div>
+                        <strong style={{ fontSize: "28px", color: "#b45309" }}>{stats.reactor}</strong>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Operating Logs</div>
+                    </div>
+                </div>
             </div>
 
         </div>

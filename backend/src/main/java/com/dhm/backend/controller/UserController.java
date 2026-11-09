@@ -13,17 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dhm.backend.entity.User;
-import com.dhm.backend.repository.UserRepository;
+import com.dhm.backend.repository.UserRepo;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserRepo userRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserController(
-            UserRepository userRepository,
+            UserRepo userRepository,
             PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
@@ -94,6 +94,12 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id) {
+
+        if (id == null || id <= 0) {
+
+            return ResponseEntity.badRequest()
+                    .body("User ID is invalid.");
+        }
 
         if (!userRepository.existsById(id)) {
 

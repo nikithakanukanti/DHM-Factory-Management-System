@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-
-const API_URL = "http://localhost:8090";
+import api from "../api";
 
 const commodities = [
     "Local Waste Rubber Tyre",
@@ -11,8 +9,16 @@ const commodities = [
     "Fuel Oil"
 ];
 
+function getTodayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 const emptyForm = {
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayDate(),
     vehicleNo: "",
     grossWeight: "",
     tareWeight: "",
@@ -21,33 +27,31 @@ const emptyForm = {
 };
 
 function SalesRegister() {
-
     const [sales, setSales] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [search, setSearch] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     async function loadSales() {
         try {
             setLoading(true);
+            setError("");
 
-            const response = await axios.get(
-                `${API_URL}/api/sales`,
-                {
-                    withCredentials: true
-                }
-            );
+            const response = await api.get("/api/sales");
 
-            setSales(
-                Array.isArray(response.data)
-                    ? response.data
-                    : []
-            );
-
-        } catch (error) {
-            console.error("Sales loading error:", error);
+            setSales(Array.isArray(response.data) ? response.data : []);
+        } catch (err) {
+            console.error("Sales loading error:", err);
             setSales([]);
+            if (err.response?.status === 403) {
+                setError("You do not have permission to view sales records.");
+            } else {
+                setError("Unable to connect to backend server.");
+            }
         } finally {
             setLoading(false);
         }
@@ -59,8 +63,7 @@ function SalesRegister() {
 
     function handleChange(event) {
         const { name, value } = event.target;
-
-        setForm(prev => ({
+        setForm((prev) => ({
             ...prev,
             [name]: value
         }));
@@ -70,37 +73,53 @@ function SalesRegister() {
     const tare = Number(form.tareWeight) || 0;
     const netWeight = Math.max(gross - tare, 0);
 
+    function clearForm() {
+        setForm({
+            date: getTodayDate(),
+            vehicleNo: "",
+            grossWeight: "",
+            tareWeight: "",
+            commodity: "",
+            remarks: ""
+        });
+        setEditingId(null);
+        setError("");
+        setSuccess("");
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
+        setError("");
+        setSuccess("");
 
         if (!form.date) {
-            alert("Please select a date.");
+            setError("Please select a date.");
             return;
         }
 
         if (!form.vehicleNo.trim()) {
-            alert("Please enter vehicle number.");
+            setError("Please enter vehicle number.");
             return;
         }
 
         if (gross <= 0) {
-            alert("Please enter gross weight.");
+            setError("Please enter valid gross weight.");
             return;
         }
 
         if (tare < 0 || tare >= gross) {
-            alert("Tare weight must be less than gross weight.");
+            setError("Tare weight must be less than gross weight.");
             return;
         }
 
         if (!form.commodity) {
-            alert("Please select a commodity.");
+            setError("Please select a commodity.");
             return;
         }
 
         const payload = {
             date: form.date,
-            vehicleNo: form.vehicleNo.trim(),
+            vehicleNo: form.vehicleNo.trim().toUpperCase(),
             grossWeight: gross,
             tareWeight: tare,
             commodity: form.commodity,
@@ -108,521 +127,354 @@ function SalesRegister() {
         };
 
         try {
+            setSaving(true);
 
             if (editingId) {
-
-                await axios.put(
-                    `${API_URL}/api/sales/${editingId}`,
-                    payload,
-                    {
-                        withCredentials: true
-                    }
-                );
-
-                alert("Sales entry updated successfully.");
-
+                await api.put(`/api/sales/${editingId}`, payload);
+                setSuccess("Sales entry updated successfully.");
             } else {
-
-                await axios.post(
-                    `${API_URL}/api/sales`,
-                    payload,
-                    {
-                        withCredentials: true
-                    }
-                );
-
-                alert("Sales entry saved successfully.");
+                await api.post("/api/sales", payload);
+                setSuccess("Sales entry recorded successfully.");
             }
 
             clearForm();
-            loadSales();
-
-        } catch (error) {
-
-            console.error("Sales save error:", error);
-
-            alert(
-                error.response?.data?.message ||
-                "Unable to save sales entry."
-            );
+            await loadSales();
+        } catch (err) {
+            console.error("Sales save error:", err);
+            if (err.response?.status === 403) {
+                setError("Supervisor cannot edit previous-day records.");
+            } else {
+                setError(err.response?.data?.message || typeof err.response?.data === "string" ? err.response.data : "Unable to save sales entry.");
+            }
+        } finally {
+            setSaving(false);
         }
     }
 
     function startEdit(sale) {
-
         setEditingId(sale.id);
-
         setForm({
-            date: sale.date || "",
+            date: sale.date || getTodayDate(),
             vehicleNo: sale.vehicleNo || "",
-            grossWeight: sale.grossWeight || "",
-            tareWeight: sale.tareWeight || "",
+            grossWeight: sale.grossWeight ?? "",
+            tareWeight: sale.tareWeight ?? "",
             commodity: sale.commodity || "",
             remarks: sale.remarks || ""
         });
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
+        setError("");
+        setSuccess("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     async function deleteSale(id) {
-
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this sales entry?"
-        );
-
-        if (!confirmed) {
+        if (!window.confirm("Are you sure you want to delete this sales entry?")) {
             return;
         }
 
         try {
+            setLoading(true);
+            setError("");
+            setSuccess("");
 
-            await axios.delete(
-                `${API_URL}/api/sales/${id}`,
-                {
-                    withCredentials: true
-                }
-            );
-
-            loadSales();
-
-        } catch (error) {
-
-            console.error("Delete sales error:", error);
-
-            alert("Unable to delete sales entry.");
+            await api.delete(`/api/sales/${id}`);
+            setSuccess("Sales entry deleted successfully.");
+            await loadSales();
+        } catch (err) {
+            console.error("Delete sale error:", err);
+            if (err.response?.status === 403) {
+                setError("Supervisor cannot delete previous-day records.");
+            } else {
+                setError("Unable to delete sales entry.");
+            }
+        } finally {
+            setLoading(false);
         }
-    }
-
-    function clearForm() {
-
-        setForm({
-            ...emptyForm,
-            date: new Date().toISOString().split("T")[0]
-        });
-
-        setEditingId(null);
     }
 
     const filteredSales = useMemo(() => {
-
         const query = search.toLowerCase().trim();
+        if (!query) return sales;
 
-        if (!query) {
-            return sales;
-        }
-
-        return sales.filter(sale =>
-            String(sale.vehicleNo || "")
-                .toLowerCase()
-                .includes(query) ||
-
-            String(sale.commodity || "")
-                .toLowerCase()
-                .includes(query) ||
-
-            String(sale.date || "")
-                .toLowerCase()
-                .includes(query) ||
-
-            String(sale.remarks || "")
-                .toLowerCase()
-                .includes(query)
+        return sales.filter((s) =>
+            String(s.date || "").toLowerCase().includes(query) ||
+            String(s.vehicleNo || "").toLowerCase().includes(query) ||
+            String(s.commodity || "").toLowerCase().includes(query) ||
+            String(s.remarks || "").toLowerCase().includes(query)
         );
-
     }, [sales, search]);
+
+    const totalSalesWeight = filteredSales.reduce((sum, s) => {
+        const val = s.netWeight != null ? Number(s.netWeight) : (s.grossWeight && s.tareWeight ? Number(s.grossWeight) - Number(s.tareWeight) : 0);
+        return sum + val;
+    }, 0);
 
     return (
         <div className="vehicle-page">
 
             {/* PAGE HEADER */}
-
-            <div className="vehicle-page-header">
-
+            <div className="page-header">
                 <div>
-                    <h1>Sales Register</h1>
-
-                    <p>
-                        Record and manage sales vehicle entries
-                    </p>
+                    <h1>SALES REGISTER</h1>
+                    <p>Finished Goods Dispatch & Outward Weighbridge Log</p>
                 </div>
 
                 <button
+                    type="button"
                     className="secondary-button"
                     onClick={loadSales}
+                    disabled={loading || saving}
                 >
-                    Refresh
+                    {loading ? "Loading..." : "Refresh"}
                 </button>
-
             </div>
 
+            {/* SUCCESS BANNER */}
+            {success && (
+                <div className="success-message" style={{ marginBottom: "20px" }}>
+                    ✓ {success}
+                </div>
+            )}
 
-            {/* FORM */}
+            {/* ERROR BANNER */}
+            {error && (
+                <div className="error-message" style={{ marginBottom: "20px" }}>
+                    ⚠ {error}
+                </div>
+            )}
 
-            <div className="register-card">
-
-                <div className="register-card-header">
-
-                    <h2>
-                        {editingId
-                            ? "Edit Sales Entry"
-                            : "New Sales Entry"}
-                    </h2>
-
-                    <p>
-                        Enter vehicle, weight and commodity details
-                    </p>
-
+            {/* FORM CARD */}
+            <div className="card">
+                <div className="section-header">
+                    <div>
+                        <h2>{editingId ? "Edit Sales Entry" : "New Sales Dispatch Entry"}</h2>
+                        <p>Record outgoing dispatch weights and material</p>
+                    </div>
                 </div>
 
+                <form onSubmit={handleSubmit} className="form-grid">
 
-                <form
-                    className="vehicle-form"
-                    onSubmit={handleSubmit}
-                >
-
-                    <div className="form-grid">
-
-                        {/* DATE */}
-
-                        <div className="form-group">
-
-                            <label>Date</label>
-
-                            <input
-                                type="date"
-                                name="date"
-                                value={form.date}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-
-                        {/* VEHICLE */}
-
-                        <div className="form-group">
-
-                            <label>Vehicle No.</label>
-
-                            <input
-                                type="text"
-                                name="vehicleNo"
-                                placeholder="Enter vehicle number"
-                                value={form.vehicleNo}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
-
-                        {/* COMMODITY */}
-
-                        <div className="form-group">
-
-                            <label>Commodity</label>
-
-                            <select
-                                name="commodity"
-                                value={form.commodity}
-                                onChange={handleChange}
-                            >
-
-                                <option value="">
-                                    Select commodity
-                                </option>
-
-                                {commodities.map(item => (
-                                    <option
-                                        key={item}
-                                        value={item}
-                                    >
-                                        {item}
-                                    </option>
-                                ))}
-
-                            </select>
-
-                        </div>
-
-
-                        {/* GROSS */}
-
-                        <div className="form-group">
-
-                            <label>Gross Weight</label>
-
-                            <div className="weight-field">
-
-                                <input
-                                    type="number"
-                                    name="grossWeight"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0"
-                                    value={form.grossWeight}
-                                    onChange={handleChange}
-                                />
-
-                                <span className="weight-unit">
-                                    KG
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        {/* TARE */}
-
-                        <div className="form-group">
-
-                            <label>Tare Weight</label>
-
-                            <div className="weight-field">
-
-                                <input
-                                    type="number"
-                                    name="tareWeight"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0"
-                                    value={form.tareWeight}
-                                    onChange={handleChange}
-                                />
-
-                                <span className="weight-unit">
-                                    KG
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        {/* NET */}
-
-                        <div className="form-group">
-
-                            <label>Net Weight</label>
-
-                            <div className="net-weight-box">
-
-                                <span className="net-weight-label">
-                                    Gross Weight − Tare Weight
-                                </span>
-
-                                <span className="net-weight-value">
-                                    {netWeight.toFixed(2)} KG
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        {/* REMARKS */}
-
-                        <div className="form-group full-width">
-
-                            <label>Remarks</label>
-
-                            <textarea
-                                name="remarks"
-                                placeholder="Enter remarks"
-                                value={form.remarks}
-                                onChange={handleChange}
-                            />
-
-                        </div>
-
+                    {/* DATE */}
+                    <div className="form-group">
+                        <label>Date *</label>
+                        <input
+                            type="date"
+                            name="date"
+                            value={form.date}
+                            onChange={handleChange}
+                            required
+                        />
                     </div>
 
+                    {/* VEHICLE NO */}
+                    <div className="form-group">
+                        <label>Vehicle Number *</label>
+                        <input
+                            type="text"
+                            name="vehicleNo"
+                            value={form.vehicleNo}
+                            onChange={handleChange}
+                            placeholder="e.g. MH 04 CD 9876"
+                            required
+                        />
+                    </div>
+
+                    {/* GROSS WEIGHT */}
+                    <div className="form-group">
+                        <label>Gross Weight (KG) *</label>
+                        <input
+                            type="number"
+                            name="grossWeight"
+                            value={form.grossWeight}
+                            onChange={handleChange}
+                            placeholder="Gross weight"
+                            min="0"
+                            step="0.01"
+                            required
+                        />
+                    </div>
+
+                    {/* TARE WEIGHT */}
+                    <div className="form-group">
+                        <label>Tare Weight (KG) *</label>
+                        <input
+                            type="number"
+                            name="tareWeight"
+                            value={form.tareWeight}
+                            onChange={handleChange}
+                            placeholder="Tare weight"
+                            min="0"
+                            step="0.01"
+                            required
+                        />
+                    </div>
+
+                    {/* CALCULATED NET WEIGHT */}
+                    <div className="form-group">
+                        <label>Net Weight (Calculated)</label>
+                        <input
+                            type="text"
+                            value={`${netWeight.toFixed(2)} KG`}
+                            readOnly
+                            style={{ background: "#f1f5f9", fontWeight: "bold", color: "#1e293b" }}
+                        />
+                    </div>
+
+                    {/* COMMODITY */}
+                    <div className="form-group">
+                        <label>Commodity *</label>
+                        <select
+                            name="commodity"
+                            value={form.commodity}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Select commodity</option>
+                            {commodities.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* REMARKS */}
+                    <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                        <label>Remarks</label>
+                        <textarea
+                            name="remarks"
+                            value={form.remarks}
+                            onChange={handleChange}
+                            placeholder="Customer name, destination, or dispatch notes"
+                            rows="2"
+                        />
+                    </div>
 
                     {/* BUTTONS */}
-
-                    <div
-                        style={{
-                            gridColumn: "1 / -1",
-                            display: "flex",
-                            gap: "10px",
-                            flexWrap: "wrap"
-                        }}
-                        >
-
+                    <div style={{ gridColumn: "1 / -1", display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         <button
                             type="submit"
                             className="primary-button"
+                            disabled={saving}
                         >
-                            {editingId
-                                ? "Update Sale"
-                                : "Save Sale"}
+                            {saving ? "Saving..." : editingId ? "Update Sales Entry" : "Save Sales Entry"}
                         </button>
-                        
+
                         <button
                             type="button"
                             className="secondary-button"
                             onClick={clearForm}
+                            disabled={saving}
                         >
                             Clear
                         </button>
-
                     </div>
 
                 </form>
-
             </div>
 
-
-            {/* TABLE */}
-
-            <div className="entries-card">
-
-                <div className="entries-header">
-
+            {/* SUMMARY CARDS */}
+            <div className="card" style={{ marginTop: "25px" }}>
+                <div className="section-header">
                     <div>
-                        <h2>Sales Entries</h2>
-
-                        <p style={{
-                            color: "#6b7280",
-                            fontSize: "14px",
-                            marginTop: "5px"
-                        }}>
-                            {filteredSales.length} entries
-                        </p>
+                        <h2>Sales Summary</h2>
+                        <p>Total finished goods outward metrics</p>
                     </div>
-
-                    <input
-                        className="search-box"
-                        type="text"
-                        placeholder="Search vehicle, commodity, date..."
-                        value={search}
-                        onChange={event =>
-                            setSearch(event.target.value)
-                        }
-                    />
-
                 </div>
 
-
-                {loading ? (
-
-                    <div className="loading">
-                        Loading sales entries...
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Total Outward Dispatches</div>
+                        <strong style={{ fontSize: "26px", color: "#1f2937" }}>{filteredSales.length}</strong>
                     </div>
 
-                ) : filteredSales.length === 0 ? (
+                    <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "10px", background: "#f8fafc" }}>
+                        <div style={{ color: "#6b7280", fontSize: "13px", marginBottom: "8px" }}>Total Net Dispatched Weight</div>
+                        <strong style={{ fontSize: "26px", color: "#1f2937" }}>
+                            {totalSalesWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                            <span style={{ fontSize: "14px", fontWeight: "600" }}>KG</span>
+                            <span style={{ fontSize: "13px", color: "#64748b", marginLeft: "6px" }}>
+                                ({(totalSalesWeight / 1000).toFixed(2)} MT)
+                            </span>
+                        </strong>
+                    </div>
+                </div>
+            </div>
 
-                    <div className="empty-state">
-                        No sales entries found.
+            {/* SALES TABLE */}
+            <div className="card" style={{ marginTop: "25px" }}>
+                <div className="section-header" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+                    <div>
+                        <h2>Sales Records ({filteredSales.length})</h2>
+                        <p>All finished goods dispatch entries</p>
                     </div>
 
-                ) : (
+                    <div style={{ minWidth: "260px" }}>
+                        <input
+                            type="text"
+                            placeholder="Search sales..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                        />
+                    </div>
+                </div>
 
-                    <div className="table-container">
-
-                        <table>
-
-                            <thead>
-
+                <div className="table-container" style={{ overflowX: "auto" }}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Vehicle No</th>
+                                <th>Gross (KG)</th>
+                                <th>Tare (KG)</th>
+                                <th>Net (KG)</th>
+                                <th>Commodity</th>
+                                <th>Remarks</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredSales.length === 0 ? (
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Vehicle No.</th>
-                                    <th>Gross Wt.</th>
-                                    <th>Tare Wt.</th>
-                                    <th>Net Wt.</th>
-                                    <th>Commodity</th>
-                                    <th>Remarks</th>
-                                    <th>Actions</th>
+                                    <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                                        No sales records found.
+                                    </td>
                                 </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                {filteredSales.map(sale => (
-
-                                    <tr key={sale.id}>
-
-                                        <td>
-                                            {sale.date || "-"}
-                                        </td>
-
-                                        <td>
-                                            <strong>
-                                                {sale.vehicleNo || "-"}
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            {sale.grossWeight || 0}
-                                        </td>
-
-                                        <td>
-                                            {sale.tareWeight || 0}
-                                        </td>
-
-                                        <td>
-                                            <strong>
-                                                {sale.netWeight ||
-                                                    (
-                                                        Number(
-                                                            sale.grossWeight || 0
-                                                        ) -
-                                                        Number(
-                                                            sale.tareWeight || 0
-                                                        )
-                                                    ).toFixed(2)}
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            {sale.commodity || "-"}
-                                        </td>
-
-                                        <td>
-                                            {sale.remarks || "-"}
-                                        </td>
-
-                                        <td>
-
-                                            <div className="action-buttons">
-
-                                                <button
-                                                    className="btn-edit"
-                                                    onClick={() =>
-                                                        startEdit(sale)
-                                                    }
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    className="btn-delete"
-                                                    onClick={() =>
-                                                        deleteSale(sale.id)
-                                                    }
-                                                >
-                                                    Delete
-                                                </button>
-
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                ))}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                )}
+                            ) : (
+                                filteredSales.map((s) => {
+                                    const net = s.netWeight != null ? s.netWeight : (s.grossWeight && s.tareWeight ? s.grossWeight - s.tareWeight : 0);
+                                    return (
+                                        <tr key={s.id}>
+                                            <td>{s.date}</td>
+                                            <td><strong>{s.vehicleNo}</strong></td>
+                                            <td>{Number(s.grossWeight || 0).toLocaleString()}</td>
+                                            <td>{Number(s.tareWeight || 0).toLocaleString()}</td>
+                                            <td><strong style={{ color: "#0369a1" }}>{Number(net).toLocaleString()} KG</strong></td>
+                                            <td>{s.commodity}</td>
+                                            <td>{s.remarks || "-"}</td>
+                                            <td>
+                                                <div style={{ display: "flex", gap: "6px" }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEdit(s)}
+                                                        style={{ padding: "4px 8px", fontSize: "11px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "5px", cursor: "pointer" }}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteSale(s.id)}
+                                                        style={{ padding: "4px 8px", fontSize: "11px", background: "#fee2e2", border: "1px solid #fca5a5", color: "#b91c1c", borderRadius: "5px", cursor: "pointer" }}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
             </div>
 

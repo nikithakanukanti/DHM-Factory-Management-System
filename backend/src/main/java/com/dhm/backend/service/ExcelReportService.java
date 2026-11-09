@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -37,76 +38,73 @@ public class ExcelReportService {
         this.reactorTimingRepository = reactorTimingRepository;
     }
 
-    public byte[] generateReport() throws IOException {
+    public byte[] generateReport(LocalDate from, LocalDate to) throws IOException {
 
-        List<Vehicle> vehicles = vehicleRepository.findAll();
-        List<Sale> sales = saleRepository.findAll();
-        List<Purchase> purchases = purchaseRepository.findAll();
-        List<ReactorTiming> reactorTimings =
-                reactorTimingRepository.findAll();
+        List<Vehicle> vehicles;
+        List<Sale> sales;
+        List<Purchase> purchases;
+        List<ReactorTiming> reactorTimings;
+
+        if (from != null && to != null) {
+            vehicles = vehicleRepository.findByDateBetween(from, to);
+            sales = saleRepository.findByDateBetween(from, to);
+            purchases = purchaseRepository.findByDateBetween(from, to);
+            reactorTimings = reactorTimingRepository.findByDateBetween(from, to);
+        } else if (from != null) {
+            vehicles = vehicleRepository.findByDateGreaterThanEqual(from);
+            sales = saleRepository.findByDateGreaterThanEqual(from);
+            purchases = purchaseRepository.findByDateGreaterThanEqual(from);
+            reactorTimings = reactorTimingRepository.findByDateGreaterThanEqual(from);
+        } else if (to != null) {
+            vehicles = vehicleRepository.findByDateLessThanEqual(to);
+            sales = saleRepository.findByDateLessThanEqual(to);
+            purchases = purchaseRepository.findByDateLessThanEqual(to);
+            reactorTimings = reactorTimingRepository.findByDateLessThanEqual(to);
+        } else {
+            vehicles = vehicleRepository.findAll();
+            sales = saleRepository.findAll();
+            purchases = purchaseRepository.findAll();
+            reactorTimings = reactorTimingRepository.findAll();
+        }
 
         try (Workbook workbook = new XSSFWorkbook()) {
 
-            // =========================
-            // STYLES
-            // =========================
-
             CellStyle headerStyle = workbook.createCellStyle();
-
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setFontHeightInPoints((short) 11);
-
             headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(
-                    IndexedColors.GREY_25_PERCENT.getIndex()
-            );
-            headerStyle.setFillPattern(
-                    FillPatternType.SOLID_FOREGROUND
-            );
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
             // =========================
-            // SUMMARY
+            // SUMMARY SHEET
             // =========================
-
             Sheet summary = workbook.createSheet("Summary");
-
             Row summaryTitle = summary.createRow(0);
-            summaryTitle.createCell(0).setCellValue(
-                    "DHM FACTORY DIGITAL ENTRY"
-            );
+            summaryTitle.createCell(0).setCellValue("DHM FACTORY DIGITAL ENTRY - REPORT");
 
-            Row vehicleCount = summary.createRow(2);
-            vehicleCount.createCell(0).setCellValue(
-                    "Total Vehicles"
-            );
-            vehicleCount.createCell(1).setCellValue(
-                    vehicles.size()
-            );
+            String dateRangeText = (from != null || to != null)
+                    ? "Date Range: " + (from != null ? from.toString() : "Earliest") + " to " + (to != null ? to.toString() : "Latest")
+                    : "Date Range: All Records";
+            Row rangeRow = summary.createRow(1);
+            rangeRow.createCell(0).setCellValue(dateRangeText);
 
-            Row salesCount = summary.createRow(3);
-            salesCount.createCell(0).setCellValue(
-                    "Total Sales"
-            );
-            salesCount.createCell(1).setCellValue(
-                    sales.size()
-            );
+            Row vehicleCount = summary.createRow(3);
+            vehicleCount.createCell(0).setCellValue("Total Vehicles");
+            vehicleCount.createCell(1).setCellValue(vehicles.size());
 
-            Row purchaseCount = summary.createRow(4);
-            purchaseCount.createCell(0).setCellValue(
-                    "Total Purchases"
-            );
-            purchaseCount.createCell(1).setCellValue(
-                    purchases.size()
-            );
+            Row salesCount = summary.createRow(4);
+            salesCount.createCell(0).setCellValue("Total Sales Entries");
+            salesCount.createCell(1).setCellValue(sales.size());
 
-            Row reactorCount = summary.createRow(5);
-            reactorCount.createCell(0).setCellValue(
-                    "Reactor Records"
-            );
-            reactorCount.createCell(1).setCellValue(
-                    reactorTimings.size()
-            );
+            Row purchaseCount = summary.createRow(5);
+            purchaseCount.createCell(0).setCellValue("Total Purchase Entries");
+            purchaseCount.createCell(1).setCellValue(purchases.size());
+
+            Row reactorCount = summary.createRow(6);
+            reactorCount.createCell(0).setCellValue("Reactor Records");
+            reactorCount.createCell(1).setCellValue(reactorTimings.size());
 
             summary.autoSizeColumn(0);
             summary.autoSizeColumn(1);
@@ -114,280 +112,119 @@ public class ExcelReportService {
             // =========================
             // VEHICLE REGISTER
             // =========================
-
-            Sheet vehicleSheet =
-                    workbook.createSheet("Vehicle Register");
-
+            Sheet vehicleSheet = workbook.createSheet("Vehicle Register");
             Row vehicleHeader = vehicleSheet.createRow(0);
-
             String[] vehicleColumns = {
-                    "Date",
-                    "Vehicle No",
-                    "Gross Weight",
-                    "Tare Weight",
-                    "Net Weight",
-                    "Local",
-                    "Imported",
-                    "Remarks"
+                    "Date", "Vehicle No", "Gross Weight", "Tare Weight", "Net Weight", "Commodity", "Local", "Imported", "Register Type", "Remarks"
             };
-
-            createHeader(
-                    vehicleHeader,
-                    vehicleColumns,
-                    headerStyle
-            );
+            createHeader(vehicleHeader, vehicleColumns, headerStyle);
 
             int vehicleRow = 1;
-
             for (Vehicle vehicle : vehicles) {
-
                 Row row = vehicleSheet.createRow(vehicleRow++);
-
-                row.createCell(0).setCellValue(
-                        safe(vehicle.getDate())
-                );
-
-                row.createCell(1).setCellValue(
-                        safe(vehicle.getVehicleNo())
-                );
-
-                row.createCell(2).setCellValue(
-                        number(vehicle.getGrossWeight())
-                );
-
-                row.createCell(3).setCellValue(
-                        number(vehicle.getTareWeight())
-                );
-
-                row.createCell(4).setCellValue(
-                        number(vehicle.getNetWeight())
-                );
-
-                row.createCell(5).setCellValue(
-                        safe(vehicle.isLocal())
-                );
-
-                row.createCell(6).setCellValue(
-                        safe(vehicle.isImported())
-                );
-
-                row.createCell(7).setCellValue(
-                        safe(vehicle.getRemarks())
-                );
+                row.createCell(0).setCellValue(safe(vehicle.getDate()));
+                row.createCell(1).setCellValue(safe(vehicle.getVehicleNo()));
+                row.createCell(2).setCellValue(number(vehicle.getGrossWeight()));
+                row.createCell(3).setCellValue(number(vehicle.getTareWeight()));
+                row.createCell(4).setCellValue(number(vehicle.getNetWeight()));
+                row.createCell(5).setCellValue(safe(vehicle.getCommodity()));
+                row.createCell(6).setCellValue(safe(vehicle.isLocal()));
+                row.createCell(7).setCellValue(safe(vehicle.isImported()));
+                row.createCell(8).setCellValue(safe(vehicle.getRegisterType()));
+                row.createCell(9).setCellValue(safe(vehicle.getRemarks()));
             }
-
             autoSizeColumns(vehicleSheet, vehicleColumns.length);
 
             // =========================
             // SALES REGISTER
             // =========================
-
-            Sheet salesSheet =
-                    workbook.createSheet("Sales Register");
-
+            Sheet salesSheet = workbook.createSheet("Sales Register");
             Row salesHeader = salesSheet.createRow(0);
-
             String[] salesColumns = {
-                    "Date",
-                    "Vehicle No",
-                    "Gross Weight",
-                    "Tare Weight",
-                    "Net Weight",
-                    "Commodity",
-                    "Remarks"
+                    "Date", "Vehicle No", "Gross Weight", "Tare Weight", "Net Weight", "Commodity", "Remarks"
             };
-
-            createHeader(
-                    salesHeader,
-                    salesColumns,
-                    headerStyle
-            );
+            createHeader(salesHeader, salesColumns, headerStyle);
 
             int salesRow = 1;
-
             for (Sale sale : sales) {
-
                 Row row = salesSheet.createRow(salesRow++);
-
-                row.createCell(0).setCellValue(
-                        safe(sale.getDate())
-                );
-
-                row.createCell(1).setCellValue(
-                        safe(sale.getVehicleNo())
-                );
-
-                row.createCell(2).setCellValue(
-                        number(sale.getGrossWeight())
-                );
-
-                row.createCell(3).setCellValue(
-                        number(sale.getTareWeight())
-                );
-
-                row.createCell(4).setCellValue(
-                        number(sale.getNetWeight())
-                );
-
-                row.createCell(5).setCellValue(
-                        safe(sale.getCommodity())
-                );
-
-                row.createCell(6).setCellValue(
-                        safe(sale.getRemarks())
-                );
+                row.createCell(0).setCellValue(safe(sale.getDate()));
+                row.createCell(1).setCellValue(safe(sale.getVehicleNo()));
+                row.createCell(2).setCellValue(number(sale.getGrossWeight()));
+                row.createCell(3).setCellValue(number(sale.getTareWeight()));
+                row.createCell(4).setCellValue(number(sale.getNetWeight()));
+                row.createCell(5).setCellValue(safe(sale.getCommodity()));
+                row.createCell(6).setCellValue(safe(sale.getRemarks()));
             }
-
             autoSizeColumns(salesSheet, salesColumns.length);
 
             // =========================
             // PURCHASE REGISTER
             // =========================
-
-            Sheet purchaseSheet =
-                    workbook.createSheet("Purchase Register");
-
-            Row purchaseHeader =
-                    purchaseSheet.createRow(0);
-
+            Sheet purchaseSheet = workbook.createSheet("Purchase Register");
+            Row purchaseHeader = purchaseSheet.createRow(0);
             String[] purchaseColumns = {
-                    "Date",
-                    "Net Weight",
-                    "Commodity",
-                    "Remarks"
+                    "Date", "Vehicle No", "Gross Weight", "Tare Weight", "Net Weight", "Commodity", "Remarks"
             };
-
-            createHeader(
-                    purchaseHeader,
-                    purchaseColumns,
-                    headerStyle
-            );
+            createHeader(purchaseHeader, purchaseColumns, headerStyle);
 
             int purchaseRow = 1;
-
             for (Purchase purchase : purchases) {
-
-                Row row =
-                        purchaseSheet.createRow(purchaseRow++);
-
-                row.createCell(0).setCellValue(
-                        safe(purchase.getDate())
-                );
-
-                row.createCell(1).setCellValue(
-                        number(purchase.getNetWeight())
-                );
-
-                row.createCell(2).setCellValue(
-                        safe(purchase.getCommodity())
-                );
-
-                row.createCell(3).setCellValue(
-                        safe(purchase.getRemarks())
-                );
+                Row row = purchaseSheet.createRow(purchaseRow++);
+                row.createCell(0).setCellValue(safe(purchase.getDate()));
+                row.createCell(1).setCellValue(safe(purchase.getVehicleNo()));
+                row.createCell(2).setCellValue(number(purchase.getGrossWeight()));
+                row.createCell(3).setCellValue(number(purchase.getTareWeight()));
+                row.createCell(4).setCellValue(number(purchase.getNetWeight()));
+                row.createCell(5).setCellValue(safe(purchase.getCommodity()));
+                row.createCell(6).setCellValue(safe(purchase.getRemarks()));
             }
-
-            autoSizeColumns(
-                    purchaseSheet,
-                    purchaseColumns.length
-            );
+            autoSizeColumns(purchaseSheet, purchaseColumns.length);
 
             // =========================
             // REACTOR TIMING
             // =========================
-
-            Sheet reactorSheet =
-                    workbook.createSheet("Reactor Timing");
-
-            Row reactorHeader =
-                    reactorSheet.createRow(0);
-
+            Sheet reactorSheet = workbook.createSheet("Reactor Timing");
+            Row reactorHeader = reactorSheet.createRow(0);
             String[] reactorColumns = {
-                    "Date",
-                    "Reactor 1 Time",
-                    "Reactor 2 Time"
+                    "Date", "Reactor 1 Time", "Reactor 2 Time"
             };
-
-            createHeader(
-                    reactorHeader,
-                    reactorColumns,
-                    headerStyle
-            );
+            createHeader(reactorHeader, reactorColumns, headerStyle);
 
             int reactorRow = 1;
-
             for (ReactorTiming timing : reactorTimings) {
-
-                Row row =
-                        reactorSheet.createRow(reactorRow++);
-
-                row.createCell(0).setCellValue(
-                        safe(timing.getDate())
-                );
-
-                row.createCell(1).setCellValue(
-                        safe(timing.getReactor1Time())
-                );
-
-                row.createCell(2).setCellValue(
-                        safe(timing.getReactor2Time())
-                );
-
-                
+                Row row = reactorSheet.createRow(reactorRow++);
+                row.createCell(0).setCellValue(safe(timing.getDate()));
+                row.createCell(1).setCellValue(safe(timing.getReactor1Time()));
+                row.createCell(2).setCellValue(safe(timing.getReactor2Time()));
             }
+            autoSizeColumns(reactorSheet, reactorColumns.length);
 
-            autoSizeColumns(
-                    reactorSheet,
-                    reactorColumns.length
-            );
-
-            // =========================
-            // RETURN EXCEL FILE
-            // =========================
-
-            ByteArrayOutputStream outputStream =
-                    new ByteArrayOutputStream();
-
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);
-
             return outputStream.toByteArray();
         }
     }
 
-    private void createHeader(
-            Row row,
-            String[] columns,
-            CellStyle style) {
-
+    private void createHeader(Row row, String[] columns, CellStyle style) {
         for (int i = 0; i < columns.length; i++) {
-
             Cell cell = row.createCell(i);
-
             cell.setCellValue(columns[i]);
             cell.setCellStyle(style);
         }
     }
 
-    private void autoSizeColumns(
-            Sheet sheet,
-            int columnCount) {
-
+    private void autoSizeColumns(Sheet sheet, int columnCount) {
         for (int i = 0; i < columnCount; i++) {
             sheet.autoSizeColumn(i);
         }
     }
 
     private String safe(Object value) {
-
-        return value == null
-                ? ""
-                : value.toString();
+        return value == null ? "" : value.toString();
     }
 
     private double number(Number value) {
-
-        return value == null
-                ? 0
-                : value.doubleValue();
+        return value == null ? 0 : value.doubleValue();
     }
 }

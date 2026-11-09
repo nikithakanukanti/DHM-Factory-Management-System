@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { Link } from "react-router-dom";
+import api from "../api";
 
 function Dashboard() {
-
     const [stats, setStats] = useState({
         vehicles: 0,
         sales: 0,
         purchases: 0,
-        reactor: 0
+        reactorTimings: 0,
+        todayVehicles: 0,
+        todaySales: 0,
+        todayPurchases: 0,
+        todayReactorTimings: 0,
+        totalSalesWeightKg: 0,
+        totalPurchasesWeightKg: 0
     });
 
     const [loading, setLoading] = useState(true);
@@ -17,347 +23,222 @@ function Dashboard() {
     }, []);
 
     async function loadDashboard() {
-
         try {
-
-            /*
-             * These endpoints can be connected
-             * to your DashboardController.
-             *
-             * Until then, the page remains functional
-             * with zero values.
-             */
-
-            const requests = await Promise.allSettled([
-                axios.get(
-                    "http://localhost:8090/api/vehicles",
-                    { withCredentials: true }
-                ),
-                axios.get(
-                    "http://localhost:8090/api/sales",
-                    { withCredentials: true }
-                ),
-                axios.get(
-                    "http://localhost:8090/api/purchases",
-                    { withCredentials: true }
-                ),
-                axios.get(
-                    "http://localhost:8090/api/reactor-timings",
-                    { withCredentials: true }
-                )
-            ]);
-
-            const vehicles =
-                requests[0].status === "fulfilled"
-                    ? requests[0].value.data.length
-                    : 0;
-
-            const sales =
-                requests[1].status === "fulfilled"
-                    ? requests[1].value.data.length
-                    : 0;
-
-            const purchases =
-                requests[2].status === "fulfilled"
-                    ? requests[2].value.data.length
-                    : 0;
-
-            const reactor =
-                requests[3].status === "fulfilled"
-                    ? requests[3].value.data.length
-                    : 0;
-
-            setStats({
-                vehicles,
-                sales,
-                purchases,
-                reactor
-            });
-
+            setLoading(true);
+            const response = await api.get("/api/dashboard/stats");
+            if (response.data) {
+                setStats({
+                    vehicles: response.data.vehicles || 0,
+                    sales: response.data.sales || 0,
+                    purchases: response.data.purchases || 0,
+                    reactorTimings: response.data.reactorTimings || 0,
+                    todayVehicles: response.data.todayVehicles || 0,
+                    todaySales: response.data.todaySales || 0,
+                    todayPurchases: response.data.todayPurchases || 0,
+                    todayReactorTimings: response.data.todayReactorTimings || 0,
+                    totalSalesWeightKg: response.data.totalSalesWeightKg || 0,
+                    totalPurchasesWeightKg: response.data.totalPurchasesWeightKg || 0
+                });
+            }
         } catch (error) {
-
-            console.error(
-                "Dashboard loading error:",
-                error
-            );
-
+            console.error("Dashboard loading error:", error);
         } finally {
-
             setLoading(false);
-
         }
     }
 
-    return (
+    const inwardMT = (Number(stats.totalPurchasesWeightKg || 0) / 1000).toFixed(1);
+    const outwardMT = (Number(stats.totalSalesWeightKg || 0) / 1000).toFixed(1);
 
+    return (
         <div className="dashboard-page">
 
+            {/* PAGE HEADING */}
             <div className="page-heading">
-
                 <div>
-
-                    <span className="page-kicker">
-                        OVERVIEW
-                    </span>
-
-                    <h1>
-                        Dashboard
-                    </h1>
-
-                    <p>
-                        Monitor your factory records and
-                        daily operations.
-                    </p>
-
+                    <span className="page-kicker">OVERVIEW & LIVE METRICS</span>
+                    <h1>Operations Dashboard</h1>
+                    <p>Real-time factory metrics, weighbridge logs, and daily plant operations.</p>
                 </div>
 
-                <div className="dashboard-date">
-                    <span>●</span>
-                    System Online
+                <div className="dashboard-date" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ color: "#22c55e", fontSize: "14px" }}>●</span>
+                    <span>System Online (Asia/Kolkata)</span>
                 </div>
-
             </div>
 
+            {/* TODAY'S ACTIVITY BAR */}
+            <div className="card" style={{ marginBottom: "25px", background: "linear-gradient(135deg, #122b45 0%, #1e4063 100%)", color: "white" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+                    <div>
+                        <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8 }}>
+                            TODAY'S SHIFT ACTIVITY
+                        </div>
+                        <h2 style={{ fontSize: "22px", margin: "4px 0 0", color: "white" }}>
+                            {loading ? "..." : `${stats.todayVehicles} Vehicles at Weighbridge Today`}
+                        </h2>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+                        <div>
+                            <span style={{ fontSize: "12px", opacity: 0.8, display: "block" }}>Today's Sales</span>
+                            <strong style={{ fontSize: "20px" }}>{stats.todaySales}</strong>
+                        </div>
+                        <div>
+                            <span style={{ fontSize: "12px", opacity: 0.8, display: "block" }}>Today's Inward</span>
+                            <strong style={{ fontSize: "20px" }}>{stats.todayPurchases}</strong>
+                        </div>
+                        <div>
+                            <span style={{ fontSize: "12px", opacity: 0.8, display: "block" }}>Today's Reactor Logs</span>
+                            <strong style={{ fontSize: "20px" }}>{stats.todayReactorTimings}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* STAT CARDS GRID */}
             <div className="stat-grid">
 
+                {/* VEHICLES */}
                 <div className="stat-card blue">
-
-                    <div className="stat-icon">
-                        🚛
-                    </div>
-
+                    <div className="stat-icon">🚛</div>
                     <div className="stat-content">
-
-                        <span>
-                            VEHICLES
-                        </span>
-
-                        <strong>
-                            {loading
-                                ? "..."
-                                : stats.vehicles}
-                        </strong>
-
-                        <small>
-                            Registered vehicles
-                        </small>
-
+                        <span>ALL VEHICLES</span>
+                        <strong>{loading ? "..." : stats.vehicles}</strong>
+                        <small>Total Gate & Weighbridge Logs</small>
                     </div>
-
                 </div>
 
+                {/* SALES */}
                 <div className="stat-card green">
-
-                    <div className="stat-icon">
-                        ↗
-                    </div>
-
+                    <div className="stat-icon">↗</div>
                     <div className="stat-content">
-
-                        <span>
-                            SALES
-                        </span>
-
-                        <strong>
-                            {loading
-                                ? "..."
-                                : stats.sales}
-                        </strong>
-
-                        <small>
-                            Sales entries
-                        </small>
-
+                        <span>SALES DISPATCHES</span>
+                        <strong>{loading ? "..." : stats.sales}</strong>
+                        <small>{outwardMT} MT Dispatched ({Number(stats.totalSalesWeightKg).toLocaleString()} KG)</small>
                     </div>
-
                 </div>
 
-                <div className="stat-card orange">
-
-                    <div className="stat-icon">
-                        ↙
-                    </div>
-
-                    <div className="stat-content">
-
-                        <span>
-                            PURCHASES
-                        </span>
-
-                        <strong>
-                            {loading
-                                ? "..."
-                                : stats.purchases}
-                        </strong>
-
-                        <small>
-                            Purchase entries
-                        </small>
-
-                    </div>
-
-                </div>
-
+                {/* PURCHASES */}
                 <div className="stat-card purple">
-
-                    <div className="stat-icon">
-                        ◷
-                    </div>
-
+                    <div className="stat-icon">↙</div>
                     <div className="stat-content">
-
-                        <span>
-                            TIMINGS
-                        </span>
-
-                        <strong>
-                            {loading
-                                ? "..."
-                                : stats.reactor}
-                        </strong>
-
-                        <small>
-                            Timing records
-                        </small>
-
+                        <span>PURCHASE INWARD</span>
+                        <strong>{loading ? "..." : stats.purchases}</strong>
+                        <small>{inwardMT} MT Inward ({Number(stats.totalPurchasesWeightKg).toLocaleString()} KG)</small>
                     </div>
+                </div>
 
+                {/* REACTOR TIMING */}
+                <div className="stat-card amber">
+                    <div className="stat-icon">◷</div>
+                    <div className="stat-content">
+                        <span>REACTOR BATCHES</span>
+                        <strong>{loading ? "..." : stats.reactorTimings}</strong>
+                        <small>Pyrolysis Reactor 1 & 2 Runs</small>
+                    </div>
                 </div>
 
             </div>
 
-            <div className="dashboard-grid">
-
-                <div className="dashboard-panel">
-
-                    <div className="panel-header">
-
-                        <div>
-                            <span className="panel-kicker">
-                                QUICK ACCESS
-                            </span>
-
-                            <h2>
-                                Common Actions
-                            </h2>
-                        </div>
-
+            {/* QUICK ACTIONS & MODULE NAV */}
+            <div className="card" style={{ marginTop: "25px" }}>
+                <div className="section-header">
+                    <div>
+                        <h2>Quick Module Operations</h2>
+                        <p>Direct shortcuts to factory workflows</p>
                     </div>
-
-                    <div className="quick-actions">
-
-                        <a href="/vehicle-register">
-                            <span>🚛</span>
-                            <div>
-                                <strong>
-                                    Vehicle Register
-                                </strong>
-                                <small>
-                                    Add vehicle entry
-                                </small>
-                            </div>
-                            <b>→</b>
-                        </a>
-
-                        <a href="/sales-register">
-                            <span>↗</span>
-                            <div>
-                                <strong>
-                                    Sales Register
-                                </strong>
-                                <small>
-                                    Manage sales entries
-                                </small>
-                            </div>
-                            <b>→</b>
-                        </a>
-
-                        <a href="/purchase-register">
-                            <span>↙</span>
-                            <div>
-                                <strong>
-                                    Purchase Register
-                                </strong>
-                                <small>
-                                    Manage purchases
-                                </small>
-                            </div>
-                            <b>→</b>
-                        </a>
-
-                        <a href="/reactor-timing">
-                            <span>◷</span>
-                            <div>
-                                <strong>
-                                    Reactor Timing
-                                </strong>
-                                <small>
-                                    View timing records
-                                </small>
-                            </div>
-                            <b>→</b>
-                        </a>
-
-                    </div>
-
                 </div>
 
-                <div className="dashboard-panel system-panel">
-
-                    <div className="panel-header">
-
-                        <div>
-                            <span className="panel-kicker">
-                                SYSTEM
-                            </span>
-
-                            <h2>
-                                System Status
-                            </h2>
-                        </div>
-
-                    </div>
-
-                    <div className="system-status">
-
-                        <div className="system-status-icon">
-                            ✓
-                        </div>
-
-                        <h3>
-                            All Systems Operational
-                        </h3>
-
-                        <p>
-                            DHM Factory Management System
-                            is running normally.
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+                    <Link
+                        to="/vehicle-register"
+                        style={{
+                            padding: "18px",
+                            borderRadius: "10px",
+                            border: "1px solid #e2e8f0",
+                            background: "#f8fafc",
+                            textDecoration: "none",
+                            color: "inherit",
+                            display: "block",
+                            transition: "all 0.2s"
+                        }}
+                    >
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>🚛</div>
+                        <strong style={{ display: "block", fontSize: "16px", color: "#1e293b", marginBottom: "4px" }}>
+                            Vehicle Weighbridge
+                        </strong>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                            Log arriving trucks and route to Sales or Purchase
                         </p>
+                    </Link>
 
-                        <div className="status-item">
-                            <span>
-                                Backend
-                            </span>
-                            <b>Online</b>
-                        </div>
+                    <Link
+                        to="/sales-register"
+                        style={{
+                            padding: "18px",
+                            borderRadius: "10px",
+                            border: "1px solid #e2e8f0",
+                            background: "#f8fafc",
+                            textDecoration: "none",
+                            color: "inherit",
+                            display: "block",
+                            transition: "all 0.2s"
+                        }}
+                    >
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>↗</div>
+                        <strong style={{ display: "block", fontSize: "16px", color: "#1e293b", marginBottom: "4px" }}>
+                            Sales Register
+                        </strong>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                            Manage outgoing dispatches (Oil, Scrap, Carbon)
+                        </p>
+                    </Link>
 
-                        <div className="status-item">
-                            <span>
-                                Database
-                            </span>
-                            <b>Connected</b>
-                        </div>
+                    <Link
+                        to="/purchase-register"
+                        style={{
+                            padding: "18px",
+                            borderRadius: "10px",
+                            border: "1px solid #e2e8f0",
+                            background: "#f8fafc",
+                            textDecoration: "none",
+                            color: "inherit",
+                            display: "block",
+                            transition: "all 0.2s"
+                        }}
+                    >
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>↙</div>
+                        <strong style={{ display: "block", fontSize: "16px", color: "#1e293b", marginBottom: "4px" }}>
+                            Purchase Register
+                        </strong>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                            Record tyre waste deliveries and raw materials
+                        </p>
+                    </Link>
 
-                        <div className="status-item">
-                            <span>
-                                Security
-                            </span>
-                            <b>Protected</b>
-                        </div>
-
-                    </div>
-
+                    <Link
+                        to="/reactor-timing"
+                        style={{
+                            padding: "18px",
+                            borderRadius: "10px",
+                            border: "1px solid #e2e8f0",
+                            background: "#f8fafc",
+                            textDecoration: "none",
+                            color: "inherit",
+                            display: "block",
+                            transition: "all 0.2s"
+                        }}
+                    >
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>◷</div>
+                        <strong style={{ display: "block", fontSize: "16px", color: "#1e293b", marginBottom: "4px" }}>
+                            Reactor Timings
+                        </strong>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                            Batch operating times for Reactor 1 & 2
+                        </p>
+                    </Link>
                 </div>
-
             </div>
 
         </div>

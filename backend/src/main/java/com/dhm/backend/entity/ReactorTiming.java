@@ -21,6 +21,16 @@ public class ReactorTiming {
     @Column(name = "reactor_2_time")
     private LocalTime reactor2Time;
 
+    @Column(name = "operator_name")
+    private String operatorName;
+
+    private String shift = "SHIFT_A"; // SHIFT_A, SHIFT_B, NIGHT_SHIFT
+
+    @Column(name = "batch_no")
+    private String batchNo;
+
+    private String remarks;
+
     public ReactorTiming() {
     }
 
@@ -51,4 +61,36 @@ public class ReactorTiming {
     public void setReactor2Time(LocalTime reactor2Time) {
         this.reactor2Time = reactor2Time;
     }
-} 
+
+    public String getOperatorName() {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName) {
+        this.operatorName = operatorName;
+    }
+
+    public String getShift() {
+        return shift;
+    }
+
+    public void setShift(String shift) {
+        this.shift = shift;
+    }
+
+    public String getBatchNo() {
+        return batchNo;
+    }
+
+    public void setBatchNo(String batchNo) {
+        this.batchNo = batchNo;
+    }
+
+    public String getRemarks() {
+        return remarks;
+    }
+
+    public void setRemarks(String remarks) {
+        this.remarks = remarks;
+    }
+}

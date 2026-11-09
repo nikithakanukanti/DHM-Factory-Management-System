@@ -2,7 +2,7 @@ package com.dhm.backend.config;
 
 import com.dhm.backend.entity.Role;
 import com.dhm.backend.entity.User;
-import com.dhm.backend.repository.UserRepository;
+import com.dhm.backend.repository.UserRepo;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -13,8 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     @Bean
-    CommandLineRunner createUsers(
-            UserRepository userRepository,
+    public CommandLineRunner createUsers(
+            UserRepo userRepository,
             PasswordEncoder passwordEncoder) {
 
         return args -> {

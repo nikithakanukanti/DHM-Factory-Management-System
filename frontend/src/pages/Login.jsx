@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 
 function Login() {
     const navigate = useNavigate();
@@ -10,11 +10,11 @@ function Login() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [coldStartNotice, setColdStartNotice] = useState(false);
     const [error, setError] = useState("");
 
     async function handleLogin(event) {
         event.preventDefault();
-
         setError("");
 
         if (!username.trim() || !password) {
@@ -23,96 +23,87 @@ function Login() {
         }
 
         setLoading(true);
+        setColdStartNotice(false);
+
+        // Show cloud server wake-up notice if it takes more than 3.5 seconds
+        const noticeTimer = setTimeout(() => {
+            setColdStartNotice(true);
+        }, 3500);
 
         try {
-            // ------------------------------------------------
-            // STEP 1: Clear any existing Spring Security session
-            // ------------------------------------------------
+            // STEP 1: Attempt JSON token-based login
+            let userData = null;
+
             try {
-                await axios.post(
-                    "http://localhost:8090/logout",
-                    {},
-                    {
-                        withCredentials: true
-                    }
-                );
-            } catch (logoutError) {
-                // It's okay if there was no previous session
-                console.log("No previous session to clear.");
+                const res = await api.post("/api/auth/login", {
+                    username: username.trim(),
+                    password: password
+                });
+
+                if (res.data && res.data.token) {
+                    userData = {
+                        username: res.data.username || username.trim(),
+                        role: res.data.role || "ADMIN",
+                        token: res.data.token
+                    };
+                }
+            } catch (jsonErr) {
+                // If 401 Unauthorized, rethrow so user sees invalid credentials
+                if (jsonErr.response?.status === 401) {
+                    throw jsonErr;
+                }
+                // Fallback to legacy form login if endpoint not reached
+                console.warn("JSON login endpoint fallback, attempting form login...", jsonErr);
             }
 
-            // ------------------------------------------------
-            // STEP 2: Login using Spring Security form login
-            // ------------------------------------------------
-            const formData = new URLSearchParams();
+            // STEP 2: Fallback to form-login if JSON login was not returned
+            if (!userData) {
+                const formData = new URLSearchParams();
+                formData.append("username", username.trim());
+                formData.append("password", password);
 
-            formData.append("username", username.trim());
-            formData.append("password", password);
-
-            await axios.post(
-                "http://localhost:8090/login",
-                formData,
-                {
-                    withCredentials: true,
+                await api.post("/login", formData, {
                     headers: {
-                        "Content-Type":
-                            "application/x-www-form-urlencoded"
+                        "Content-Type": "application/x-www-form-urlencoded"
                     }
-                }
-            );
+                });
 
-            // ------------------------------------------------
-            // STEP 3: Ask backend who actually logged in
-            // ------------------------------------------------
-            const response = await axios.get(
-                "http://localhost:8090/api/auth/me",
-                {
-                    withCredentials: true
-                }
-            );
-
-            console.log(
-                "Logged in user:",
-                response.data
-            );
-
-            // ------------------------------------------------
-            // STEP 4: Store actual username + role
-            // ------------------------------------------------
-            sessionStorage.setItem(
-                "dhmUser",
-                JSON.stringify(response.data)
-            );
-
-            // ------------------------------------------------
-            // STEP 5: Go to dashboard
-            // ------------------------------------------------
-            navigate("/dashboard");
-
-        } catch (error) {
-            console.error(
-                "Login failed:",
-                error
-            );
-
-            if (error.response) {
-                console.error(
-                    "Status:",
-                    error.response.status
-                );
-
-                console.error(
-                    "Response:",
-                    error.response.data
-                );
+                // Fetch user details from /api/auth/me
+                const meRes = await api.get("/api/auth/me");
+                userData = {
+                    username: meRes.data?.username || username.trim(),
+                    role: meRes.data?.role || "ADMIN",
+                    token: ""
+                };
             }
 
-            setError(
-                "Invalid username or password."
-            );
+            // STEP 3: Store authenticated user
+            localStorage.setItem("dhmUser", JSON.stringify(userData));
+            sessionStorage.setItem("dhmUser", JSON.stringify(userData));
 
+            // STEP 4: Navigate to appropriate landing page
+            if (userData.role === "SUPERVISOR") {
+                navigate("/vehicle-register", { replace: true });
+            } else {
+                navigate("/dashboard", { replace: true });
+            }
+
+        } catch (err) {
+            console.error("Login failed:", err);
+
+            if (err.response?.data?.error) {
+                setError(err.response.data.error);
+            } else if (err.response?.status === 401 || err.response?.status === 403) {
+                setError("Invalid username or password.");
+            } else if (err.code === "ECONNABORTED" || !err.response) {
+                setError("Server is currently waking up or unreachable. Please try again in 10-15 seconds.");
+            } else {
+                setError("Unable to connect to the server. Please try again.");
+            }
         } finally {
+            clearTimeout(noticeTimer);
             setLoading(false);
+            setColdStartNotice(false);
         }
     }
 
@@ -128,39 +119,45 @@ function Login() {
 
                 {/* Company Branding */}
                 <div className="login-brand">
-
                     <img
                         src="/dhm-logo.jpg"
                         alt="DHM Pyrotech Enterprises"
                         className="company-logo"
                     />
-
                     <div>
                         <h1>DHM</h1>
                         <h2>Pyrotech Enterprises</h2>
                     </div>
-
                 </div>
 
                 <div className="login-divider"></div>
 
                 {/* Heading */}
                 <div className="login-heading">
-
-                    <h2>
-                        Welcome Back
-                    </h2>
-
-                    <p>
-                        Sign in to continue to your dashboard
-                    </p>
-
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to continue to your factory dashboard</p>
                 </div>
 
                 {/* Error Message */}
                 {error && (
                     <div className="login-error">
                         ⚠ {error}
+                    </div>
+                )}
+
+                {/* Cold Start Notice */}
+                {coldStartNotice && (
+                    <div style={{
+                        background: "rgba(59, 130, 246, 0.12)",
+                        border: "1px solid rgba(59, 130, 246, 0.3)",
+                        color: "#93c5fd",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        marginBottom: "16px",
+                        textAlign: "center"
+                    }}>
+                        ⏳ Waking up cloud server... please hold on a few seconds.
                     </div>
                 )}
 
@@ -172,81 +169,45 @@ function Login() {
 
                     {/* Username */}
                     <div className="form-group">
-
-                        <label>
-                            Username
-                        </label>
-
+                        <label>Username</label>
                         <div className="input-wrapper">
-
-                            <span className="input-icon">
-                                ◉
-                            </span>
-
+                            <span className="input-icon">◉</span>
                             <input
                                 type="text"
                                 value={username}
-                                onChange={(event) =>
-                                    setUsername(
-                                        event.target.value
-                                    )
-                                }
+                                onChange={(event) => setUsername(event.target.value)}
                                 placeholder="Enter username"
                                 autoComplete="username"
                                 disabled={loading}
+                                required
                             />
-
                         </div>
-
                     </div>
 
                     {/* Password */}
                     <div className="form-group">
-
-                        <label>
-                            Password
-                        </label>
-
+                        <label>Password</label>
                         <div className="input-wrapper">
-
-                            <span className="input-icon">
-                                ◆
-                            </span>
-
+                            <span className="input-icon">◆</span>
                             <input
-                                type={
-                                    showPassword
-                                        ? "text"
-                                        : "password"
-                                }
+                                type={showPassword ? "text" : "password"}
                                 value={password}
-                                onChange={(event) =>
-                                    setPassword(
-                                        event.target.value
-                                    )
-                                }
+                                onChange={(event) => setPassword(event.target.value)}
                                 placeholder="Enter password"
                                 autoComplete="current-password"
                                 disabled={loading}
+                                required
                             />
-
                             <button
                                 type="button"
                                 className="password-toggle"
-                                onClick={() =>
-                                    setShowPassword(
-                                        !showPassword
-                                    )
-                                }
+                                onClick={() => setShowPassword(!showPassword)}
                                 disabled={loading}
+                                aria-label="Toggle password visibility"
                             >
-                                {showPassword
-                                    ? "◉"
-                                    : "◌"}
+                                {showPassword ? "◉" : "◌"}
                             </button>
-
                         </div>
-
                     </div>
 
                     {/* Sign In Button */}
@@ -255,7 +216,6 @@ function Login() {
                         className="login-button"
                         disabled={loading}
                     >
-
                         {loading ? (
                             <>
                                 <span className="button-spinner"></span>
@@ -267,22 +227,48 @@ function Login() {
                                 <span>→</span>
                             </>
                         )}
-
                     </button>
+
+                    {/* Quick Demo Credentials */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center' }}>
+                        <button
+                            type="button"
+                            onClick={() => { setUsername('admin'); setPassword('Admin@123'); setError(''); }}
+                            style={{
+                                background: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                color: '#b5c4d3',
+                                padding: '6px 12px',
+                                borderRadius: '7px',
+                                fontSize: '11px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ⚡ Admin Demo
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setUsername('supervisor'); setPassword('Supervisor@123'); setError(''); }}
+                            style={{
+                                background: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                color: '#b5c4d3',
+                                padding: '6px 12px',
+                                borderRadius: '7px',
+                                fontSize: '11px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ⚡ Supervisor Demo
+                        </button>
+                    </div>
 
                 </form>
 
                 {/* Footer */}
                 <div className="login-footer">
-
-                    <span>
-                        DHM Factory Management System
-                    </span>
-
-                    <span>
-                        Secure Access
-                    </span>
-
+                    <span>DHM Factory Management System</span>
+                    <span>Secure Access</span>
                 </div>
 
             </div>
