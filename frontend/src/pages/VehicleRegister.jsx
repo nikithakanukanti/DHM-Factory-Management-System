@@ -161,7 +161,12 @@ function VehicleRegister() {
             return next;
         });
 
-        setSuccess(`Photo for ${data.photoType.toUpperCase()} attached with GPS coordinates.`);
+        const hasGps = data.latitude != null && data.longitude != null;
+        setSuccess(
+            hasGps
+                ? `Photo (${data.photoType.toUpperCase()}) captured and attached with GPS location recorded for security.`
+                : `Photo (${data.photoType.toUpperCase()}) captured and attached. GPS location was not available at capture time.`
+        );
     }
 
     function removePhoto(photoField) {
@@ -667,14 +672,14 @@ function VehicleRegister() {
 
                     {/* SECTION 4: 3 PHOTOGRAPHS (VEHICLE, GROSS SCALE, TARE SCALE) */}
                     <div style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", color: "#2563eb", marginBottom: "10px", letterSpacing: "0.5px" }}>
-                        4. Weighbridge Photographic Proof & GPS Stamping
+                        4. Vehicle & Weighbridge Photos with GPS Location (Security Proof)
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", marginBottom: "16px" }}>
 
                         {/* PHOTO 1: VEHICLE PHOTOGRAPH */}
                         <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px", background: "#f8fafc" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>1. Vehicle Photo</strong>
+                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>1. Vehicle Photo (with GPS)</strong>
                                 {form.vehiclePhoto && (
                                     <button type="button" onClick={() => removePhoto("vehiclePhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
                                         âœ• Remove
@@ -705,7 +710,7 @@ function VehicleRegister() {
                         {/* PHOTO 2: GROSS WEIGHT SCALE PHOTOGRAPH */}
                         <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px", background: "#f8fafc" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>2. Gross Weight Scale</strong>
+                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>2. Gross Weight Scale Photo (with GPS)</strong>
                                 {form.grossWeightPhoto && (
                                     <button type="button" onClick={() => removePhoto("grossWeightPhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
                                         âœ• Remove
@@ -736,7 +741,7 @@ function VehicleRegister() {
                         {/* PHOTO 3: TARE WEIGHT SCALE PHOTOGRAPH */}
                         <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px", background: "#f8fafc" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>3. Tare Weight Scale</strong>
+                                <strong style={{ fontSize: "13px", color: "#1e293b" }}>3. Tare Weight Scale Photo (with GPS)</strong>
                                 {form.tareWeightPhoto && (
                                     <button type="button" onClick={() => removePhoto("tareWeightPhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
                                         âœ• Remove
@@ -1235,3 +1240,4 @@ function VehicleRegister() {
 }
 
 export default VehicleRegister;
+

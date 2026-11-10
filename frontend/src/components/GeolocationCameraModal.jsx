@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 
 const PHOTO_TYPE_LABELS = {
-    vehicle: "Vehicle Photograph",
-    gross: "Gross-Weight Scale Photograph",
-    tare: "Tare-Weight Scale Photograph"
+    vehicle: "Vehicle Photo (Camera + GPS)",
+    gross: "Gross Weight Scale Photo (Camera + GPS)",
+    tare: "Tare Weight Scale Photo (Camera + GPS)"
 };
 
 function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapture, onClose }) {
@@ -46,7 +46,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                     longitude: lng,
                     accuracy: acc,
                     timestamp: new Date().toLocaleString(),
-                    address: `GPS (${lat.toFixed(4)}, ${lng.toFixed(4)}) ±${acc}m`
+                    address: `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)} (Â±${acc}m)`
                 });
                 setGpsLoading(false);
             },
@@ -137,9 +137,9 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
 
         ctx.fillStyle = "#93c5fd";
         ctx.font = `${Math.max(Math.round(bannerHeight * 0.22), 12)}px Inter, Arial, sans-serif`;
-        const gpsText = location.latitude && location.longitude
-            ? `Vehicle: ${vehicleNo || "N/A"} | GPS: ${location.latitude}° N, ${location.longitude}° E`
-            : `Vehicle: ${vehicleNo || "N/A"} | GPS: Recorded at Weighbridge`;
+        const gpsText = location.latitude != null && location.longitude != null
+            ? `Vehicle: ${vehicleNo || "N/A"} | GPS: ${Number(location.latitude).toFixed(6)}Â°, ${Number(location.longitude).toFixed(6)}Â°`
+            : `Vehicle: ${vehicleNo || "N/A"} | GPS: Not available at capture`;
         const timeText = new Date().toLocaleString();
         ctx.fillText(`${gpsText} | ${timeText}`, 16, height - Math.round(bannerHeight * 0.2));
 
@@ -180,12 +180,21 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
 
     // Confirm and pass data back
     const handleConfirm = () => {
+        const lat = location.latitude != null && location.latitude !== "" ? Number(location.latitude) : null;
+        const lng = location.longitude != null && location.longitude !== "" ? Number(location.longitude) : null;
+        const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+        const address = hasCoords
+            ? (location.address && String(location.address).trim()
+                ? location.address
+                : `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+            : (location.address || "");
+
         onCapture({
             photoType: activePhotoType,
             photoData: capturedImage,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            locationAddress: location.address
+            latitude: hasCoords ? lat : null,
+            longitude: hasCoords ? lng : null,
+            locationAddress: address
         });
         onClose();
     };
@@ -225,16 +234,16 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                     alignItems: "center"
                 }}>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: "17px" }}>📷 Weighbridge Camera & Geolocation Stamping</h3>
+                        <h3 style={{ margin: 0, fontSize: "17px" }}>Camera with GPS Location (Security)</h3>
                         <p style={{ margin: "2px 0 0", fontSize: "12px", opacity: 0.85 }}>
-                            Target: <strong>{PHOTO_TYPE_LABELS[activePhotoType]}</strong> | Vehicle: <strong>{vehicleNo || "Pending"}</strong>
+                            Capture: <strong>{PHOTO_TYPE_LABELS[activePhotoType]}</strong> | Vehicle: <strong>{vehicleNo || "Pending"}</strong>
                         </p>
                     </div>
                     <button
                         onClick={onClose}
                         style={{ background: "none", border: "none", color: "white", fontSize: "20px", cursor: "pointer" }}
                     >
-                        ✕
+                        âœ•
                     </button>
                 </div>
 
@@ -280,9 +289,9 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                 <strong>GPS Coordinates: </strong>
                                 {gpsLoading ? "Acquiring satellites..." : location.latitude ? (
                                     <span style={{ color: "#15803d", fontWeight: "bold" }}>
-                                        📍 {location.latitude}° N, {location.longitude}° E (±{location.accuracy}m)
+                                        ðŸ“ {location.latitude}Â° N, {location.longitude}Â° E (Â±{location.accuracy}m)
                                     </span>
-                                ) : "Location pending"}
+                                ) : "Location pending (photo can still be captured; GPS will be noted if available)"}
                             </span>
                             <div style={{ display: "flex", gap: "10px" }}>
                                 <button
@@ -291,7 +300,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                     disabled={gpsLoading}
                                     style={{ background: "none", border: "none", color: "#1e40af", cursor: "pointer", fontSize: "12px", textDecoration: "underline" }}
                                 >
-                                    {gpsLoading ? "Locating..." : "↻ Refresh GPS"}
+                                    {gpsLoading ? "Locating..." : "â†» Refresh GPS"}
                                 </button>
                                 <button
                                     type="button"
@@ -305,7 +314,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
 
                         {gpsError && (
                             <div style={{ color: "#b91c1c", marginTop: "6px" }}>
-                                ⚠ {gpsError}
+                                âš  {gpsError}
                                 <button
                                     type="button"
                                     onClick={() => setManualGps(!manualGps)}
@@ -378,7 +387,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                                 display: "inline-block",
                                                 fontWeight: "600"
                                             }}>
-                                                📁 Choose Image File from Device
+                                                ðŸ“ Choose Image File from Device
                                                 <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: "none" }} />
                                             </label>
                                         </div>
@@ -416,7 +425,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                         gap: "8px"
                                     }}
                                 >
-                                    📸 Capture & Stamp Photo
+                                    ðŸ“¸ Capture & Stamp Photo
                                 </button>
                                 <label style={{
                                     background: "#f1f5f9",
@@ -431,7 +440,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                     alignItems: "center",
                                     gap: "6px"
                                 }}>
-                                    📁 Upload from Laptop / Device
+                                    ðŸ“ Upload from Laptop / Device
                                     <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: "none" }} />
                                 </label>
                             </>
@@ -450,7 +459,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                         cursor: "pointer"
                                     }}
                                 >
-                                    ↺ Retake
+                                    â†º Retake
                                 </button>
                                 <button
                                     type="button"
@@ -466,7 +475,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                         cursor: "pointer"
                                     }}
                                 >
-                                    ✓ Attach to Vehicle Record
+                                    âœ“ Attach to Vehicle Record
                                 </button>
                             </>
                         )}
@@ -496,3 +505,5 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
 }
 
 export default GeolocationCameraModal;
+
+
