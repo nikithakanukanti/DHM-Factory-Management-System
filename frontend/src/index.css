@@ -76,7 +76,10 @@ button {
     width: 265px;
     min-width: 265px;
 
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
 
     background:
         linear-gradient(
@@ -92,6 +95,8 @@ button {
 
     position: sticky;
     top: 0;
+    align-self: flex-start;
+    overflow: hidden;
 
     z-index: 100;
 
@@ -186,6 +191,12 @@ button {
 
 .sidebar-nav {
     padding: 4px 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-nav a {
@@ -1582,6 +1593,10 @@ tbody tr:last-child td {
 
         left: 0;
         top: 0;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
 
         transform: translateX(-100%);
 

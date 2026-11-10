@@ -200,7 +200,7 @@ function MainLayout() {
                     </div>
                 </div>
 
-                <nav className="sidebar-nav" style={{ overflowY: "auto", flex: 1, paddingBottom: "20px" }}>
+                <nav className="sidebar-nav" style={{ paddingBottom: "20px" }}>
 
                     {canAccessModule("DASHBOARD") && (
                         <>
