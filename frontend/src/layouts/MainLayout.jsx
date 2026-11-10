@@ -91,8 +91,8 @@ function MainLayout() {
     };
 
     const canAccessModule = (moduleKey) => {
-        if (role === "ADMIN" || role === "SUPERVISOR") return true;
-        if (role === "CLIENT") return hasPermitted(moduleKey);
+        if (role === "ADMIN") return true;
+        if (role === "SUPERVISOR" || role === "CLIENT") return hasPermitted(moduleKey);
         return false;
     };
 
@@ -120,7 +120,7 @@ function MainLayout() {
             navigate("/dashboard", { replace: true });
             return;
         }
-        if (role === "CLIENT") {
+        if (role === "SUPERVISOR" || role === "CLIENT") {
             const mod = routeModule(path);
             if (mod && !canAccessModule(mod)) {
                 navigate("/dashboard", { replace: true });
@@ -130,7 +130,7 @@ function MainLayout() {
     }, [role, permittedModules, location.pathname]);
 
     const roleLabel = role === "ADMIN" ? "Administrator" : role === "CLIENT" ? "Client" : "Supervisor";
-    const roleSubLabel = role === "ADMIN" ? "Full Access" : role === "CLIENT" ? "Permitted Access" : "Shift Operations";
+    const roleSubLabel = role === "ADMIN" ? "Full Access" : role === "CLIENT" ? "Permitted Read-only Access" : "Limited (Permitted Modules)";
     const avatarText = (fullName || username || role || "U").charAt(0).toUpperCase();
 
     async function logout() {

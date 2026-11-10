@@ -39,7 +39,11 @@ public class ClientPermissionFilter extends OncePerRequestFilter {
 
         boolean isClient = authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_CLIENT".equals(a.getAuthority()));
-        if (!isClient) {
+        boolean isSupervisor = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPERVISOR".equals(a.getAuthority()));
+
+        // Admin has full access. Module/permission limits apply to Client and Supervisor roles.
+        if (!isClient && !isSupervisor) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,10 +55,13 @@ public class ClientPermissionFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Clients are read-only for permitted business modules (records/reports visibility only)
         String method = request.getMethod();
         boolean readOnlyMethod = "GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method);
-        if (!readOnlyMethod) {
+
+        // Clients: read-only access to permitted modules (records/reports visibility only).
+        // Supervisors: can perform operations on permitted modules, but record-level edits/deletes
+        // are further restricted by controller/service rules (same-day own records).
+        if (isClient && !readOnlyMethod) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Client accounts have read-only access to permitted modules.\"}");
@@ -91,7 +98,10 @@ public class ClientPermissionFilter extends OncePerRequestFilter {
         if (!allowed) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"You do not have permission to access this module.\"}");
+            String msg = isSupervisor
+                    ? "{\"error\":\"You do not have permission to access this module. Contact admin for access.\"}"
+                    : "{\"error\":\"You do not have permission to access this module.\"}";
+            response.getWriter().write(msg);
             return;
         }
 
