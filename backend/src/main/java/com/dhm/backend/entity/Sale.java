@@ -68,6 +68,15 @@ public class Sale {
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "quantity", precision = 10, scale = 2)
+    private BigDecimal quantity;
+
+    @Column(name = "rate", precision = 10, scale = 2)
+    private BigDecimal rate;
+
     public Sale() {
     }
 
@@ -239,5 +248,30 @@ public class Sale {
 
     public void setVehicleId(Long vehicleId) {
         this.vehicleId = vehicleId;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity != null ? quantity : netWeight;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getRate() {
+        return rate != null ? rate : unitPrice;
+    }
+
+    public void setRate(BigDecimal rate) {
+        this.rate = rate;
+        this.unitPrice = rate;
     }
 }

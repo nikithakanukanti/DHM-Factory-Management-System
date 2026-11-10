@@ -19,9 +19,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
+    private final ClientPermissionFilter clientPermissionFilter;
 
-    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter) {
+    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter,
+                          ClientPermissionFilter clientPermissionFilter) {
         this.tokenAuthenticationFilter = tokenAuthenticationFilter;
+        this.clientPermissionFilter = clientPermissionFilter;
     }
 
     @Bean
@@ -39,26 +42,38 @@ public class SecurityConfig {
                                 "/login",
                                 "/logout",
                                 "/api/auth/login",
+                                "/api/auth/forgot-password",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/dashboard",
-                                "/api/dashboard/**",
-                                "/api/reports/**",
-                                "/api/users/**"
+                                "/api/users/**",
+                                "/api/audit-logs/**",
+                                "/api/settings/**"
                         ).hasRole("ADMIN")
                         .requestMatchers(
+                                "/api/dashboard/**",
+                                "/api/reports/**",
                                 "/api/vehicles/**",
                                 "/api/sales/**",
                                 "/api/purchases/**",
+                                "/api/customers/**",
+                                "/api/suppliers/**",
+                                "/api/inventory/**",
+                                "/api/payments/**",
+                                "/api/employees/**",
+                                "/api/attendance/**",
                                 "/api/reactor-timings/**",
-                                "/api/auth/me"
-                        ).hasAnyRole("ADMIN", "SUPERVISOR")
+                                "/api/notifications/**",
+                                "/api/auth/me",
+                                "/api/auth/change-password"
+                        ).hasAnyRole("ADMIN", "SUPERVISOR", "CLIENT")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(clientPermissionFilter, TokenAuthenticationFilter.class)
                 .formLogin(form -> form
                         .loginProcessingUrl("/login")
                         .successHandler((request, response, authentication) -> response.setStatus(200))

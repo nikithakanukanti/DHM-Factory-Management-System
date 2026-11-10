@@ -32,14 +32,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                         )
                 );
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                Collections.singletonList(
-                        new SimpleGrantedAuthority(
-                                "ROLE_" + user.getRole().name()
-                        )
-                )
-        );
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .disabled(!user.isActive())
+                .authorities(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                .build();
     }
 }

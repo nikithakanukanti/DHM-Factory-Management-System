@@ -56,10 +56,16 @@ public class Vehicle {
     @Column(name = "exit_time")
     private String exitTime;
 
+    @Column(name = "exit_date")
+    private LocalDate exitDate;
+
     private String purpose;
 
     @Column(name = "party_name")
     private String partyName; // Customer or Supplier
+
+    @Column(name = "created_by")
+    private String createdBy;
 
     // GPS Geolocation Details
     private Double latitude;
@@ -72,10 +78,22 @@ public class Vehicle {
     @Column(name = "is_inside_geofence")
     private Boolean insideGeofence;
 
-    // Geolocation Camera Snapshot (Base64 JPEG with stamped coordinates)
+    // Photographs (Base64 JPEG or URLs)
     @Lob
     @Column(name = "photo_data", columnDefinition = "LONGTEXT")
     private String photoData;
+
+    @Lob
+    @Column(name = "vehicle_photo", columnDefinition = "LONGTEXT")
+    private String vehiclePhoto;
+
+    @Lob
+    @Column(name = "gross_weight_photo", columnDefinition = "LONGTEXT")
+    private String grossWeightPhoto;
+
+    @Lob
+    @Column(name = "tare_weight_photo", columnDefinition = "LONGTEXT")
+    private String tareWeightPhoto;
 
     @Column(nullable = false)
     private String status = "INSIDE"; // INSIDE, EXITED
@@ -263,12 +281,58 @@ public class Vehicle {
         this.insideGeofence = insideGeofence;
     }
 
+    public LocalDate getExitDate() {
+        return exitDate;
+    }
+
+    public void setExitDate(LocalDate exitDate) {
+        this.exitDate = exitDate;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getVehiclePhoto() {
+        return vehiclePhoto != null ? vehiclePhoto : photoData;
+    }
+
+    public void setVehiclePhoto(String vehiclePhoto) {
+        this.vehiclePhoto = vehiclePhoto;
+        if (this.photoData == null) {
+            this.photoData = vehiclePhoto;
+        }
+    }
+
+    public String getGrossWeightPhoto() {
+        return grossWeightPhoto;
+    }
+
+    public void setGrossWeightPhoto(String grossWeightPhoto) {
+        this.grossWeightPhoto = grossWeightPhoto;
+    }
+
+    public String getTareWeightPhoto() {
+        return tareWeightPhoto;
+    }
+
+    public void setTareWeightPhoto(String tareWeightPhoto) {
+        this.tareWeightPhoto = tareWeightPhoto;
+    }
+
     public String getPhotoData() {
-        return photoData;
+        return photoData != null ? photoData : vehiclePhoto;
     }
 
     public void setPhotoData(String photoData) {
         this.photoData = photoData;
+        if (this.vehiclePhoto == null) {
+            this.vehiclePhoto = photoData;
+        }
     }
 
     public String getStatus() {

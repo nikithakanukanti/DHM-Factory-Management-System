@@ -36,6 +36,9 @@ public class Item {
     @Column(name = "created_at")
     private LocalDate createdAt = LocalDate.now();
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     public Item() {
     }
 
@@ -105,5 +108,13 @@ public class Item {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

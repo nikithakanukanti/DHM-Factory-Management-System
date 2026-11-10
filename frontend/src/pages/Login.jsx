@@ -44,7 +44,9 @@ function Login() {
                     userData = {
                         username: res.data.username || username.trim(),
                         role: res.data.role || "ADMIN",
-                        token: res.data.token
+                        token: res.data.token,
+                        fullName: res.data.fullName || res.data.username || username.trim(),
+                        permittedModules: res.data.permittedModules || ""
                     };
                 }
             } catch (jsonErr) {
@@ -73,7 +75,9 @@ function Login() {
                 userData = {
                     username: meRes.data?.username || username.trim(),
                     role: meRes.data?.role || "ADMIN",
-                    token: ""
+                    token: "",
+                    fullName: meRes.data?.fullName || meRes.data?.username || username.trim(),
+                    permittedModules: meRes.data?.permittedModules || ""
                 };
             }
 
@@ -81,12 +85,8 @@ function Login() {
             localStorage.setItem("dhmUser", JSON.stringify(userData));
             sessionStorage.setItem("dhmUser", JSON.stringify(userData));
 
-            // STEP 4: Navigate to appropriate landing page
-            if (userData.role === "SUPERVISOR") {
-                navigate("/vehicle-register", { replace: true });
-            } else {
-                navigate("/dashboard", { replace: true });
-            }
+            // STEP 4: Navigate to dashboard
+            navigate("/dashboard", { replace: true });
 
         } catch (err) {
             console.error("Login failed:", err);

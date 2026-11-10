@@ -20,6 +20,17 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(name = "full_name")
+    private String fullName;
+
+    private String phone;
+
+    @Column(name = "permitted_modules")
+    private String permittedModules = "DASHBOARD,VEHICLES,SALES,PURCHASES,REPORTS";
+
     public User() {
     }
 
@@ -27,6 +38,7 @@ public class User {
         this.username = username;
         this.password = password;
         this.role = role;
+        this.active = true;
     }
 
     public Long getId() {
@@ -55,5 +67,37 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getPermittedModules() {
+        return permittedModules;
+    }
+
+    public void setPermittedModules(String permittedModules) {
+        this.permittedModules = permittedModules;
     }
 }

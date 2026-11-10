@@ -36,6 +36,12 @@ public class Employee {
     @Column(name = "basic_salary", precision = 10, scale = 2)
     private BigDecimal basicSalary = BigDecimal.ZERO;
 
+    @Column(name = "created_at")
+    private LocalDate createdAt = LocalDate.now();
+
+    @Column(name = "created_by")
+    private String createdBy;
+
     public Employee() {
     }
 
@@ -113,5 +119,21 @@ public class Employee {
 
     public void setBasicSalary(BigDecimal basicSalary) {
         this.basicSalary = basicSalary;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

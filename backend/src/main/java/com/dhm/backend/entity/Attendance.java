@@ -30,6 +30,9 @@ public class Attendance {
 
     private String remarks;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     public Attendance() {
     }
 
@@ -91,5 +94,13 @@ public class Attendance {
 
     public void setRemarks(String remarks) {
         this.remarks = remarks;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

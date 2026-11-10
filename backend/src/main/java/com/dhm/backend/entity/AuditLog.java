@@ -29,6 +29,14 @@ public class AuditLog {
     @Column(length = 2000)
     private String details;
 
+    @Lob
+    @Column(name = "old_value", columnDefinition = "LONGTEXT")
+    private String oldValue;
+
+    @Lob
+    @Column(name = "new_value", columnDefinition = "LONGTEXT")
+    private String newValue;
+
     @Column(name = "ip_address")
     private String ipAddress;
 
@@ -41,6 +49,16 @@ public class AuditLog {
         this.module = module;
         this.recordId = recordId;
         this.details = details;
+    }
+
+    public AuditLog(String username, String action, String module, Long recordId, String details, String oldValue, String newValue) {
+        this.username = username;
+        this.action = action;
+        this.module = module;
+        this.recordId = recordId;
+        this.details = details;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
     }
 
     public Long getId() {
@@ -93,6 +111,22 @@ public class AuditLog {
 
     public void setDetails(String details) {
         this.details = details;
+    }
+
+    public String getOldValue() {
+        return oldValue;
+    }
+
+    public void setOldValue(String oldValue) {
+        this.oldValue = oldValue;
+    }
+
+    public String getNewValue() {
+        return newValue;
+    }
+
+    public void setNewValue(String newValue) {
+        this.newValue = newValue;
     }
 
     public String getIpAddress() {

@@ -32,18 +32,42 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle session expiration
+// Response interceptor: handle session expiration and authorization issues
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Only clear and redirect if we're not already on the login page
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    const message = typeof data === "string" ? data : data?.error || data?.message || "";
+
+    if (status === 401) {
       if (window.location.pathname !== "/login") {
         localStorage.removeItem("dhmUser");
         sessionStorage.removeItem("dhmUser");
         window.location.href = "/login";
       }
+    } else if (status === 403) {
+      const lower = String(message).toLowerCase();
+      const isAuthStateIssue =
+        lower.includes("deactivated") ||
+        lower.includes("not authenticated") ||
+        lower.includes("access denied");
+
+      if (isAuthStateIssue && window.location.pathname !== "/login") {
+        localStorage.removeItem("dhmUser");
+        sessionStorage.removeItem("dhmUser");
+        window.alert(message || "Your session is no longer valid. Please sign in again.");
+        window.location.href = "/login";
+      } else if (lower.includes("permission to access this module")) {
+        // Client/module permission denial: keep session, notify and return to dashboard
+        window.alert(message || "You do not have permission to access this module.");
+        if (window.location.pathname !== "/dashboard") {
+          window.location.href = "/dashboard";
+        }
+      }
+      // Other 403s (e.g. supervisor edit restrictions) are handled by page-level UI.
     }
+
     return Promise.reject(error);
   }
 );

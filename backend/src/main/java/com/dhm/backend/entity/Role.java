@@ -2,5 +2,6 @@ package com.dhm.backend.entity;
 
 public enum Role {
     ADMIN,
-    SUPERVISOR
+    SUPERVISOR,
+    CLIENT
 }
