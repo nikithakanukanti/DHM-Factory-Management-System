@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "DHM Pyrotech Enterprises Factory Management System",
-  "short_name": "DHM Factory",
+  "name": "DHM Pyrotech Enterprises",
+  "short_name": "DHM Pyrotech",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0f172a",
   "theme_color": "#173f67",
-  "description": "Factory management system for vehicles, sales, purchases, inventory, reports, and operations.",
+  "description": "Enterprise operations portal for vehicles, sales, purchases, inventory, reports, and operations.",
   "categories": ["business", "productivity"],
   "icons": [
     {

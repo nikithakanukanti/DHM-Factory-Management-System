@@ -171,7 +171,7 @@ function Customers() {
 
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button type="button" onClick={loadCustomers} disabled={loading || saving} style={{ padding: "8px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "13px" }}>
-                        {loading ? "Loading..." : "â†» Refresh"}
+                        {loading ? "Loading..." : "↻ Refresh"}
                     </button>
                     {!isClient && <button type="button" onClick={openAddModal} style={{ padding: "8px 18px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "700" }}>
                         + Add Customer
@@ -181,12 +181,12 @@ function Customers() {
 
             {success && (
                 <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", borderRadius: "8px", marginBottom: "16px" }}>
-                    âœ“ {success}
+                    ✓ {success}
                 </div>
             )}
             {error && (
                 <div style={{ padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: "8px", marginBottom: "16px" }}>
-                    âš  {error}
+                    ⚠ {error}
                 </div>
             )}
 
@@ -239,10 +239,10 @@ function Customers() {
                                     <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                         <td style={{ padding: "10px 14px", fontWeight: "700", color: "#2563eb" }}>{c.customerCode}</td>
                                         <td style={{ padding: "10px 14px", fontWeight: "600", color: "#1e293b" }}>{c.name}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.phone || "â€”"}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.email || "â€”"}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.gstin || "â€”"}</td>
-                                        <td style={{ padding: "10px 14px", fontWeight: "600", color: "#0f172a" }}>â‚¹{Number(c.creditLimit || 0).toLocaleString()}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.phone || "—"}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.email || "—"}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{c.gstin || "—"}</td>
+                                        <td style={{ padding: "10px 14px", fontWeight: "600", color: "#0f172a" }}>₹{Number(c.creditLimit || 0).toLocaleString()}</td>
                                         <td style={{ padding: "10px 14px" }}>
                                             <span style={{
                                                 fontSize: "11px",
@@ -252,7 +252,7 @@ function Customers() {
                                                 background: c.status === "ACTIVE" ? "#dcfce7" : "#f1f5f9",
                                                 color: c.status === "ACTIVE" ? "#15803d" : "#64748b"
                                             }}>
-                                                â— {c.status}
+                                                ● {c.status}
                                             </span>
                                         </td>
                                         <td style={{ padding: "10px 14px", textAlign: "center" }}>
@@ -319,14 +319,14 @@ function Customers() {
                                     Customer Statement: {statementData.customer?.name}
                                 </h2>
                                 <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
-                                    Code: {statementData.customer?.customerCode} | Phone: {statementData.customer?.phone || "â€”"} | GSTIN: {statementData.customer?.gstin || "â€”"}
+                                    Code: {statementData.customer?.customerCode} | Phone: {statementData.customer?.phone || "—"} | GSTIN: {statementData.customer?.gstin || "—"}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setStatementData(null)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
 
@@ -335,7 +335,7 @@ function Customers() {
                             <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                                 <span style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase" }}>TOTAL BILLED SALES</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#166534", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.totalSalesAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.totalSalesAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                                 <small style={{ color: "#64748b", fontSize: "11px" }}>{statementData.totalSalesCount} Invoices</small>
                             </div>
@@ -343,14 +343,14 @@ function Customers() {
                             <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                                 <span style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase" }}>TOTAL PAID</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#0284c7", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.totalPaidAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.totalPaidAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                             </div>
 
                             <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca" }}>
                                 <span style={{ fontSize: "11px", color: "#991b1b", textTransform: "uppercase", fontWeight: "700" }}>OUTSTANDING BALANCE</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#dc2626", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.outstandingBalance || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.outstandingBalance || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                         </div>
@@ -385,7 +385,7 @@ function Customers() {
                                                 <td style={{ padding: "6px 8px" }}>{s.vehicleNo}</td>
                                                 <td style={{ padding: "6px 8px" }}>{s.commodity}</td>
                                                 <td style={{ padding: "6px 8px" }}>{Number(s.netWeight || 0).toLocaleString()} KG</td>
-                                                <td style={{ padding: "6px 8px", fontWeight: "700" }}>â‚¹{Number(s.grandTotal || 0).toLocaleString()}</td>
+                                                <td style={{ padding: "6px 8px", fontWeight: "700" }}>₹{Number(s.grandTotal || 0).toLocaleString()}</td>
                                                 <td style={{ padding: "6px 8px" }}>{s.paymentStatus}</td>
                                             </tr>
                                         ))
@@ -443,7 +443,7 @@ function Customers() {
                                 onClick={() => setShowModal(false)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
 
@@ -512,7 +512,7 @@ function Customers() {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                                 <div>
                                     <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Credit Limit (â‚¹)
+                                        Credit Limit (₹)
                                     </label>
                                     <input
                                         type="number"

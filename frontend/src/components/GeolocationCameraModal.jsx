@@ -46,7 +46,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                     longitude: lng,
                     accuracy: acc,
                     timestamp: new Date().toLocaleString(),
-                    address: `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)} (Â±${acc}m)`
+                    address: `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m)`
                 });
                 setGpsLoading(false);
             },
@@ -138,7 +138,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
         ctx.fillStyle = "#93c5fd";
         ctx.font = `${Math.max(Math.round(bannerHeight * 0.22), 12)}px Inter, Arial, sans-serif`;
         const gpsText = location.latitude != null && location.longitude != null
-            ? `Vehicle: ${vehicleNo || "N/A"} | GPS: ${Number(location.latitude).toFixed(6)}Â°, ${Number(location.longitude).toFixed(6)}Â°`
+            ? `Vehicle: ${vehicleNo || "N/A"} | GPS: ${Number(location.latitude).toFixed(6)}°, ${Number(location.longitude).toFixed(6)}°`
             : `Vehicle: ${vehicleNo || "N/A"} | GPS: Not available at capture`;
         const timeText = new Date().toLocaleString();
         ctx.fillText(`${gpsText} | ${timeText}`, 16, height - Math.round(bannerHeight * 0.2));
@@ -243,7 +243,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                         onClick={onClose}
                         style={{ background: "none", border: "none", color: "white", fontSize: "20px", cursor: "pointer" }}
                     >
-                        âœ•
+                        ×
                     </button>
                 </div>
 
@@ -289,7 +289,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                 <strong>GPS Coordinates: </strong>
                                 {gpsLoading ? "Acquiring satellites..." : location.latitude ? (
                                     <span style={{ color: "#15803d", fontWeight: "bold" }}>
-                                        ðŸ“ {location.latitude}Â° N, {location.longitude}Â° E (Â±{location.accuracy}m)
+                                        📍 {location.latitude}° N, {location.longitude}° E (±{location.accuracy}m)
                                     </span>
                                 ) : "Location pending (photo can still be captured; GPS will be noted if available)"}
                             </span>
@@ -300,7 +300,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                     disabled={gpsLoading}
                                     style={{ background: "none", border: "none", color: "#1e40af", cursor: "pointer", fontSize: "12px", textDecoration: "underline" }}
                                 >
-                                    {gpsLoading ? "Locating..." : "â†» Refresh GPS"}
+                                    {gpsLoading ? "Locating..." : "↻ Refresh GPS"}
                                 </button>
                                 <button
                                     type="button"
@@ -314,7 +314,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
 
                         {gpsError && (
                             <div style={{ color: "#b91c1c", marginTop: "6px" }}>
-                                âš  {gpsError}
+                                ⚠ {gpsError}
                                 <button
                                     type="button"
                                     onClick={() => setManualGps(!manualGps)}
@@ -459,7 +459,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                         cursor: "pointer"
                                     }}
                                 >
-                                    â†º Retake
+                                    ↻ Retake
                                 </button>
                                 <button
                                     type="button"
@@ -475,7 +475,7 @@ function GeolocationCameraModal({ vehicleNo, targetPhotoType = "vehicle", onCapt
                                         cursor: "pointer"
                                     }}
                                 >
-                                    âœ“ Attach to Vehicle Record
+                                    ✓ Attach to Vehicle Record
                                 </button>
                             </>
                         )}

@@ -301,7 +301,7 @@ function PurchaseRegister() {
 
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button type="button" onClick={loadData} disabled={loading || saving} style={{ padding: "8px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "13px" }}>
-                        {loading ? "Loading..." : "â†» Refresh"}
+                        {loading ? "Loading..." : "↻ Refresh"}
                     </button>
                 </div>
             </div>
@@ -318,14 +318,14 @@ function PurchaseRegister() {
                 <div style={{ background: "#fff", padding: "14px 18px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                     <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>TOTAL PURCHASE EXPENSE</span>
                     <div style={{ fontSize: "20px", fontWeight: "800", color: "#7e22ce", marginTop: "2px" }}>
-                        â‚¹{totalGrandAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                        ₹{totalGrandAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                     </div>
                 </div>
 
                 <div style={{ background: "#fff", padding: "14px 18px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                     <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>OUTSTANDING SUPPLIER BALANCE</span>
                     <div style={{ fontSize: "20px", fontWeight: "800", color: "#dc2626", marginTop: "2px" }}>
-                        â‚¹{totalOutstanding.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                        ₹{totalOutstanding.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                     </div>
                 </div>
             </div>
@@ -333,12 +333,12 @@ function PurchaseRegister() {
             {/* NOTIFICATIONS */}
             {success && (
                 <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", borderRadius: "8px", marginBottom: "16px" }}>
-                    âœ“ {success}
+                    ✓ {success}
                 </div>
             )}
             {error && (
                 <div style={{ padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: "8px", marginBottom: "16px" }}>
-                    âš  {error}
+                    ⚠ {error}
                 </div>
             )}
 
@@ -350,7 +350,7 @@ function PurchaseRegister() {
                             {editingId ? `Edit Purchase Receipt #${editingId}` : "Record Raw Material Inward (PO)"}
                         </h2>
                         <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
-                            Weights auto-calculate Net Weight (Gross âˆ’ Tare), Subtotal, and 18% GST grand total
+                            Weights auto-calculate Net Weight (Gross - Tare), Subtotal, and 18% GST grand total
                         </p>
                     </div>
 
@@ -512,7 +512,7 @@ function PurchaseRegister() {
 
                             <div>
                                 <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                    Rate per KG (â‚¹) *
+                                    Rate per KG (₹) *
                                 </label>
                                 <input
                                     type="number"
@@ -526,7 +526,7 @@ function PurchaseRegister() {
 
                             <div>
                                 <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                    Discount (â‚¹)
+                                    Discount (₹)
                                 </label>
                                 <input
                                     type="number"
@@ -557,7 +557,7 @@ function PurchaseRegister() {
                                     Total Amount (Incl. GST)
                                 </label>
                                 <div style={{ padding: "8px 10px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "6px", fontSize: "16px", fontWeight: "800", color: "#15803d" }}>
-                                    â‚¹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                         </div>
@@ -565,7 +565,7 @@ function PurchaseRegister() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px" }}>
                             <div>
                                 <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                    Paid Amount (â‚¹)
+                                    Paid Amount (₹)
                                 </label>
                                 <input
                                     type="number"
@@ -697,7 +697,7 @@ function PurchaseRegister() {
                                 <th style={{ padding: "12px 14px" }}>Vehicle Reg No</th>
                                 <th style={{ padding: "12px 14px" }}>Commodity</th>
                                 <th style={{ padding: "12px 14px" }}>Net Weight</th>
-                                <th style={{ padding: "12px 14px" }}>Rate (â‚¹/KG)</th>
+                                <th style={{ padding: "12px 14px" }}>Rate (₹/KG)</th>
                                 <th style={{ padding: "12px 14px" }}>Grand Total</th>
                                 <th style={{ padding: "12px 14px" }}>Payment</th>
                                 <th style={{ padding: "12px 14px", textAlign: "center" }}>Actions</th>
@@ -718,13 +718,13 @@ function PurchaseRegister() {
                                             <div style={{ fontSize: "11px", color: "#64748b" }}>{p.date}</div>
                                         </td>
                                         <td style={{ padding: "10px 14px", fontWeight: "600", color: "#1e293b" }}>
-                                            {p.supplierName || "â€”"}
+                                            {p.supplierName || "—"}
                                             {p.supplierInvoiceNo && (
                                                 <div style={{ fontSize: "11px", color: "#64748b" }}>Bill: {p.supplierInvoiceNo}</div>
                                             )}
                                         </td>
                                         <td style={{ padding: "10px 14px", fontWeight: "600", color: "#334155" }}>
-                                            {p.vehicleNo || "â€”"}
+                                            {p.vehicleNo || "—"}
                                         </td>
                                         <td style={{ padding: "10px 14px", color: "#334155" }}>
                                             {p.commodity}
@@ -736,7 +736,7 @@ function PurchaseRegister() {
                                             </div>
                                         </td>
                                         <td style={{ padding: "10px 14px", color: "#475569" }}>
-                                            â‚¹{Number(p.unitPrice || 0).toFixed(2)}
+                                            ₹{Number(p.unitPrice || 0).toFixed(2)}
                                         </td>
                                         <td style={{ padding: "10px 14px", fontWeight: "700", color: "#7e22ce" }}>
                                             ₹{Number(p.grandTotal || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
@@ -833,14 +833,14 @@ function PurchaseRegister() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", fontSize: "13px" }}>
                             <div>
                                 <strong>Supplier Particulars:</strong>
-                                <div style={{ color: "#1e293b", fontWeight: "600", marginTop: "2px" }}>{poModalPurchase.supplierName || "â€”"}</div>
+                                <div style={{ color: "#1e293b", fontWeight: "600", marginTop: "2px" }}>{poModalPurchase.supplierName || "—"}</div>
                                 {poModalPurchase.supplierInvoiceNo && (
                                     <div style={{ color: "#64748b" }}>Supplier Invoice: {poModalPurchase.supplierInvoiceNo}</div>
                                 )}
                             </div>
                             <div>
                                 <strong>Vehicle & Gate Details:</strong>
-                                <div style={{ color: "#1e293b", fontWeight: "600", marginTop: "2px" }}>Truck: {poModalPurchase.vehicleNo || "â€”"}</div>
+                                <div style={{ color: "#1e293b", fontWeight: "600", marginTop: "2px" }}>Truck: {poModalPurchase.vehicleNo || "—"}</div>
                                 <div style={{ color: "#64748b" }}>Commodity: {poModalPurchase.commodity}</div>
                             </div>
                         </div>
@@ -858,9 +858,9 @@ function PurchaseRegister() {
                                 <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
                                     <td style={{ padding: "8px" }}>{poModalPurchase.commodity}</td>
                                     <td style={{ padding: "8px", fontWeight: "600" }}>{Number(poModalPurchase.netWeight || 0).toLocaleString()} KG</td>
-                                    <td style={{ padding: "8px" }}>â‚¹{Number(poModalPurchase.unitPrice || 0).toFixed(2)}</td>
+                                    <td style={{ padding: "8px" }}>₹{Number(poModalPurchase.unitPrice || 0).toFixed(2)}</td>
                                     <td style={{ padding: "8px", textAlign: "right", fontWeight: "600" }}>
-                                        â‚¹{Number(poModalPurchase.subtotal || (Number(poModalPurchase.netWeight || 0) * Number(poModalPurchase.unitPrice || 0))).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                        ₹{Number(poModalPurchase.subtotal || (Number(poModalPurchase.netWeight || 0) * Number(poModalPurchase.unitPrice || 0))).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                     </td>
                                 </tr>
                             </tbody>
@@ -870,15 +870,15 @@ function PurchaseRegister() {
                             <div style={{ width: "240px", fontSize: "13px" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
                                     <span>Subtotal:</span>
-                                    <span>â‚¹{Number(poModalPurchase.subtotal || 0).toFixed(2)}</span>
+                                    <span>₹{Number(poModalPurchase.subtotal || 0).toFixed(2)}</span>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
                                     <span>GST Tax ({poModalPurchase.taxRate || 18}%):</span>
-                                    <span>â‚¹{Number(poModalPurchase.taxAmount || 0).toFixed(2)}</span>
+                                    <span>₹{Number(poModalPurchase.taxAmount || 0).toFixed(2)}</span>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid #cbd5e1", fontWeight: "800", fontSize: "15px", color: "#7e22ce" }}>
                                     <span>Grand Total:</span>
-                                    <span>â‚¹{Number(poModalPurchase.grandTotal || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                                    <span>₹{Number(poModalPurchase.grandTotal || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </div>

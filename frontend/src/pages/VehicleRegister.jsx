@@ -424,10 +424,10 @@ function VehicleRegister() {
 
                 <div style={{ display: "flex", gap: "10px" }}>
                     <Link to="/vehicle-map" style={{ padding: "8px 14px", background: "#0284c7", color: "white", borderRadius: "6px", textDecoration: "none", fontSize: "13px", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
-                        ðŸ“ Live GPS Map
+                        Live GPS Map
                     </Link>
                     <button type="button" onClick={loadVehicles} disabled={loading || saving} style={{ padding: "8px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "13px" }}>
-                        {loading ? "Loading..." : "â†» Refresh"}
+                        {loading ? "Loading..." : "↻ Refresh"}
                     </button>
                 </div>
             </div>
@@ -435,17 +435,17 @@ function VehicleRegister() {
             {/* NOTIFICATIONS */}
             {success && (
                 <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", borderRadius: "8px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>âœ“ {success}</span>
+                    <span>✓ {success}</span>
                     {lastSavedType && (
                         <Link to={lastSavedType === "SALES" ? "/sales-register" : "/purchase-register"} style={{ color: "#047857", fontWeight: "bold", textDecoration: "underline" }}>
-                            Open in {lastSavedType === "SALES" ? "Sales" : "Purchase"} Register â†’
+                            Open in {lastSavedType === "SALES" ? "Sales" : "Purchase"} Register →
                         </Link>
                     )}
                 </div>
             )}
             {error && (
                 <div style={{ padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: "8px", marginBottom: "16px" }}>
-                    âš  {error}
+                    ⚠ {error}
                 </div>
             )}
 
@@ -457,7 +457,7 @@ function VehicleRegister() {
                             {editingId ? `Edit Weighbridge Entry #${editingId}` : "Weighbridge Gate Entry (Inward / Outward)"}
                         </h2>
                         <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
-                            Weights auto-calculate Net Weight (Gross âˆ’ Tare) and carry forward to transaction registers
+                            Weights auto-calculate Net Weight (Gross - Tare) and carry forward to transaction registers
                         </p>
                     </div>
 
@@ -682,7 +682,7 @@ function VehicleRegister() {
                                 <strong style={{ fontSize: "13px", color: "#1e293b" }}>1. Vehicle Photo (with GPS)</strong>
                                 {form.vehiclePhoto && (
                                     <button type="button" onClick={() => removePhoto("vehiclePhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
-                                        âœ• Remove
+                                        ✕ Remove
                                     </button>
                                 )}
                             </div>
@@ -694,7 +694,7 @@ function VehicleRegister() {
                                         onClick={() => { setViewPhotoUrl(form.vehiclePhoto); setViewPhotoTitle("Vehicle Photograph"); }}
                                         style={{ width: "100%", height: "110px", objectFit: "cover", borderRadius: "6px", cursor: "pointer" }}
                                     />
-                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>âœ“ Photo Attached</span>
+                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>✓ Photo Attached</span>
                                 </div>
                             ) : (
                                 <button
@@ -702,7 +702,7 @@ function VehicleRegister() {
                                     onClick={() => openCameraFor("vehicle")}
                                     style={{ width: "100%", height: "90px", border: "1px dashed #94a3b8", borderRadius: "6px", background: "#fff", cursor: "pointer", fontSize: "12px", color: "#475569" }}
                                 >
-                                    ðŸ“· Snap / Upload Vehicle Photo
+                                    📷 Snap / Upload Vehicle Photo
                                 </button>
                             )}
                         </div>
@@ -713,7 +713,7 @@ function VehicleRegister() {
                                 <strong style={{ fontSize: "13px", color: "#1e293b" }}>2. Gross Weight Scale Photo (with GPS)</strong>
                                 {form.grossWeightPhoto && (
                                     <button type="button" onClick={() => removePhoto("grossWeightPhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
-                                        âœ• Remove
+                                        ✕ Remove
                                     </button>
                                 )}
                             </div>
@@ -725,7 +725,7 @@ function VehicleRegister() {
                                         onClick={() => { setViewPhotoUrl(form.grossWeightPhoto); setViewPhotoTitle("Gross Weight Scale Photo"); }}
                                         style={{ width: "100%", height: "110px", objectFit: "cover", borderRadius: "6px", cursor: "pointer" }}
                                     />
-                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>âœ“ Scale Photo Attached</span>
+                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>✓ Scale Photo Attached</span>
                                 </div>
                             ) : (
                                 <button
@@ -733,7 +733,7 @@ function VehicleRegister() {
                                     onClick={() => openCameraFor("gross")}
                                     style={{ width: "100%", height: "90px", border: "1px dashed #94a3b8", borderRadius: "6px", background: "#fff", cursor: "pointer", fontSize: "12px", color: "#475569" }}
                                 >
-                                    âš– Snap / Upload Gross Scale
+                                    📷 Snap / Upload Gross Scale
                                 </button>
                             )}
                         </div>
@@ -744,7 +744,7 @@ function VehicleRegister() {
                                 <strong style={{ fontSize: "13px", color: "#1e293b" }}>3. Tare Weight Scale Photo (with GPS)</strong>
                                 {form.tareWeightPhoto && (
                                     <button type="button" onClick={() => removePhoto("tareWeightPhoto")} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: "11px" }}>
-                                        âœ• Remove
+                                        ✕ Remove
                                     </button>
                                 )}
                             </div>
@@ -756,7 +756,7 @@ function VehicleRegister() {
                                         onClick={() => { setViewPhotoUrl(form.tareWeightPhoto); setViewPhotoTitle("Tare Weight Scale Photo"); }}
                                         style={{ width: "100%", height: "110px", objectFit: "cover", borderRadius: "6px", cursor: "pointer" }}
                                     />
-                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>âœ“ Tare Scale Attached</span>
+                                    <span style={{ fontSize: "11px", color: "#15803d", display: "block", marginTop: "4px" }}>✓ Tare Scale Attached</span>
                                 </div>
                             ) : (
                                 <button
@@ -764,7 +764,7 @@ function VehicleRegister() {
                                     onClick={() => openCameraFor("tare")}
                                     style={{ width: "100%", height: "90px", border: "1px dashed #94a3b8", borderRadius: "6px", background: "#fff", cursor: "pointer", fontSize: "12px", color: "#475569" }}
                                 >
-                                    âš– Snap / Upload Tare Scale
+                                    📷 Snap / Upload Tare Scale
                                 </button>
                             )}
                         </div>
@@ -774,10 +774,10 @@ function VehicleRegister() {
                     {/* GPS COORDINATES STRIP */}
                     <div style={{ padding: "10px 14px", background: form.latitude ? "#f0fdf4" : "#fefce8", border: "1px solid " + (form.latitude ? "#bbf7d0" : "#fef08a"), borderRadius: "8px", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", fontSize: "12px" }}>
                         <div>
-                            <strong>ðŸ“ GPS Coordinates: </strong>
+                            <strong>GPS Coordinates: </strong>
                             {form.latitude && form.longitude ? (
                                 <span style={{ color: "#166534", fontWeight: "600" }}>
-                                    {form.latitude}Â° N, {form.longitude}Â° E ({form.locationAddress || "Weighbridge Gate"})
+                                    {form.latitude}° N, {form.longitude}° E ({form.locationAddress || "Weighbridge Gate"})
                                 </span>
                             ) : (
                                 <span style={{ color: "#854d0e" }}>No GPS attached. Click any photo button to acquire device coordinates.</span>
@@ -788,7 +788,7 @@ function VehicleRegister() {
                             onClick={() => openCameraFor("vehicle")}
                             style={{ background: "#2563eb", color: "#fff", border: "none", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "11px", fontWeight: "600" }}
                         >
-                            ðŸ“ Update Coordinates
+                            📍 Update Coordinates
                         </button>
                     </div>
 
@@ -885,8 +885,8 @@ function VehicleRegister() {
                             style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "13px" }}
                         >
                             <option value="ALL">All Statuses</option>
-                            <option value="INSIDE">â— Inside Factory</option>
-                            <option value="EXITED">âœ“ Exited</option>
+                            <option value="INSIDE">● Inside Factory</option>
+                            <option value="EXITED">✓ Exited</option>
                         </select>
                     </div>
 
@@ -945,7 +945,7 @@ function VehicleRegister() {
                                         <tr key={v.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                             <td style={{ padding: "10px 14px", color: "#475569" }}>
                                                 <strong>{v.date}</strong>
-                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>In: {v.entryTime || "â€”"} {v.exitTime ? `| Out: ${v.exitTime}` : ""}</div>
+                                                <div style={{ fontSize: "11px", color: "#94a3b8" }}>In: {v.entryTime || "—"} {v.exitTime ? `| Out: ${v.exitTime}` : ""}</div>
                                             </td>
                                             <td style={{ padding: "10px 14px" }}>
                                                 <button
@@ -959,7 +959,7 @@ function VehicleRegister() {
                                                 <div style={{ fontSize: "11px", color: "#64748b" }}>{v.driverName ? `Driver: ${v.driverName}` : v.vehicleType}</div>
                                             </td>
                                             <td style={{ padding: "10px 14px", color: "#334155" }}>
-                                                {v.partyName || "â€”"}
+                                                {v.partyName || "—"}
                                                 <div style={{ fontSize: "11px", color: "#94a3b8" }}>{v.purpose || ""}</div>
                                             </td>
                                             <td style={{ padding: "10px 14px", color: "#334155" }}>
@@ -988,7 +988,7 @@ function VehicleRegister() {
                                                             title="View Gross Scale Photo"
                                                             style={{ cursor: "pointer", fontSize: "16px" }}
                                                         >
-                                                            âš–
+                                                            📷
                                                         </span>
                                                     )}
                                                     {v.tareWeightPhoto && (
@@ -1001,7 +1001,7 @@ function VehicleRegister() {
                                                         </span>
                                                     )}
                                                     {v.latitude && v.longitude ? (
-                                                        <span title={`GPS: ${v.latitude}, ${v.longitude}`} style={{ fontSize: "14px" }}>ðŸ“</span>
+                                                        <span title={`GPS: ${v.latitude}, ${v.longitude}`} style={{ fontSize: "14px" }}>GPS</span>
                                                     ) : null}
                                                 </div>
                                             </td>
@@ -1045,7 +1045,7 @@ function VehicleRegister() {
                                                     background: v.status === "INSIDE" ? "#fef3c7" : "#e2e8f0",
                                                     color: v.status === "INSIDE" ? "#92400e" : "#475569"
                                                 }}>
-                                                    â— {v.status}
+                                                    ● {v.status}
                                                 </span>
                                             </td>
                                             <td style={{ padding: "10px 14px", textAlign: "center" }}>
@@ -1148,7 +1148,7 @@ function VehicleRegister() {
                                 onClick={() => setHistoryVehicleNo(null)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
 
@@ -1169,10 +1169,10 @@ function VehicleRegister() {
                                     {historyEntries.map(h => (
                                         <tr key={h.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                             <td style={{ padding: "8px" }}>{h.date}</td>
-                                            <td style={{ padding: "8px" }}>{h.entryTime || "â€”"} / {h.exitTime || "â€”"}</td>
-                                            <td style={{ padding: "8px" }}>{h.partyName || "â€”"}</td>
+                                            <td style={{ padding: "8px" }}>{h.entryTime || "—"} / {h.exitTime || "—"}</td>
+                                            <td style={{ padding: "8px" }}>{h.partyName || "—"}</td>
                                             <td style={{ padding: "8px" }}>{h.commodity}</td>
-                                            <td style={{ padding: "8px", fontWeight: "600" }}>{h.netWeight ? `${Number(h.netWeight).toLocaleString()} KG` : "â€”"}</td>
+                                            <td style={{ padding: "8px", fontWeight: "600" }}>{h.netWeight ? `${Number(h.netWeight).toLocaleString()} KG` : "—"}</td>
                                             <td style={{ padding: "8px" }}>{h.registerType}</td>
                                             <td style={{ padding: "8px" }}>{h.status}</td>
                                         </tr>
@@ -1215,7 +1215,7 @@ function VehicleRegister() {
                                 onClick={() => setViewPhotoUrl(null)}
                                 style={{ background: "none", border: "none", color: "#fff", fontSize: "20px", cursor: "pointer" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
                         <div style={{ padding: "12px", textAlign: "center", background: "#0f172a" }}>
@@ -1240,4 +1240,5 @@ function VehicleRegister() {
 }
 
 export default VehicleRegister;
+
 

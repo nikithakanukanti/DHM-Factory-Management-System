@@ -168,7 +168,7 @@ function Suppliers() {
 
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button type="button" onClick={loadSuppliers} disabled={loading || saving} style={{ padding: "8px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "13px" }}>
-                        {loading ? "Loading..." : "â†» Refresh"}
+                        {loading ? "Loading..." : "↻ Refresh"}
                     </button>
                     {!isClient && <button type="button" onClick={openAddModal} style={{ padding: "8px 18px", background: "#7e22ce", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "700" }}>
                         + Add Supplier
@@ -178,12 +178,12 @@ function Suppliers() {
 
             {success && (
                 <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", borderRadius: "8px", marginBottom: "16px" }}>
-                    âœ“ {success}
+                    ✓ {success}
                 </div>
             )}
             {error && (
                 <div style={{ padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: "8px", marginBottom: "16px" }}>
-                    âš  {error}
+                    ⚠ {error}
                 </div>
             )}
 
@@ -235,9 +235,9 @@ function Suppliers() {
                                     <tr key={s.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                         <td style={{ padding: "10px 14px", fontWeight: "700", color: "#7e22ce" }}>{s.supplierCode}</td>
                                         <td style={{ padding: "10px 14px", fontWeight: "600", color: "#1e293b" }}>{s.name}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.phone || "â€”"}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.email || "â€”"}</td>
-                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.gstin || "â€”"}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.phone || "—"}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.email || "—"}</td>
+                                        <td style={{ padding: "10px 14px", color: "#475569" }}>{s.gstin || "—"}</td>
                                         <td style={{ padding: "10px 14px" }}>
                                             <span style={{
                                                 fontSize: "11px",
@@ -247,7 +247,7 @@ function Suppliers() {
                                                 background: s.status === "ACTIVE" ? "#dcfce7" : "#f1f5f9",
                                                 color: s.status === "ACTIVE" ? "#15803d" : "#64748b"
                                             }}>
-                                                â— {s.status}
+                                                ● {s.status}
                                             </span>
                                         </td>
                                         <td style={{ padding: "10px 14px", textAlign: "center" }}>
@@ -272,7 +272,7 @@ function Suppliers() {
                                                 >
                                                     Delete
                                                 </button>}
-                                                    âœ•
+                                                    ✕
                                                 </button>
                                             </div>
                                         </td>
@@ -314,14 +314,14 @@ function Suppliers() {
                                     Supplier Statement: {statementData.supplier?.name}
                                 </h2>
                                 <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
-                                    Code: {statementData.supplier?.supplierCode} | Phone: {statementData.supplier?.phone || "â€”"} | GSTIN: {statementData.supplier?.gstin || "â€”"}
+                                    Code: {statementData.supplier?.supplierCode} | Phone: {statementData.supplier?.phone || "—"} | GSTIN: {statementData.supplier?.gstin || "—"}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setStatementData(null)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
 
@@ -330,7 +330,7 @@ function Suppliers() {
                             <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                                 <span style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase" }}>TOTAL PURCHASE EXPENSE</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#7e22ce", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.totalPurchasesAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.totalPurchasesAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                                 <small style={{ color: "#64748b", fontSize: "11px" }}>{statementData.totalPurchasesCount} Purchase Orders</small>
                             </div>
@@ -338,14 +338,14 @@ function Suppliers() {
                             <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                                 <span style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase" }}>TOTAL PAID TO SUPPLIER</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#0284c7", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.totalPaidAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.totalPaidAmount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                             </div>
 
                             <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca" }}>
                                 <span style={{ fontSize: "11px", color: "#991b1b", textTransform: "uppercase", fontWeight: "700" }}>OUTSTANDING PAYABLE</span>
                                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#dc2626", marginTop: "2px" }}>
-                                    â‚¹{Number(statementData.outstandingBalance || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                                    ₹{Number(statementData.outstandingBalance || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                         </div>
@@ -380,7 +380,7 @@ function Suppliers() {
                                                 <td style={{ padding: "6px 8px" }}>{p.vehicleNo}</td>
                                                 <td style={{ padding: "6px 8px" }}>{p.commodity}</td>
                                                 <td style={{ padding: "6px 8px" }}>{Number(p.netWeight || 0).toLocaleString()} KG</td>
-                                                <td style={{ padding: "6px 8px", fontWeight: "700" }}>â‚¹{Number(p.grandTotal || 0).toLocaleString()}</td>
+                                                <td style={{ padding: "6px 8px", fontWeight: "700" }}>₹{Number(p.grandTotal || 0).toLocaleString()}</td>
                                                 <td style={{ padding: "6px 8px" }}>{p.paymentStatus}</td>
                                             </tr>
                                         ))
@@ -438,7 +438,7 @@ function Suppliers() {
                                 onClick={() => setShowModal(false)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
                             >
-                                âœ•
+                                ✕
                             </button>
                         </div>
 

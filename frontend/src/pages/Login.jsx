@@ -229,45 +229,13 @@ function Login() {
                         )}
                     </button>
 
-                    {/* Quick Demo Credentials */}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center' }}>
-                        <button
-                            type="button"
-                            onClick={() => { setUsername('admin'); setPassword('Admin@123'); setError(''); }}
-                            style={{
-                                background: 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.18)',
-                                color: '#b5c4d3',
-                                padding: '6px 12px',
-                                borderRadius: '7px',
-                                fontSize: '11px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            ⚡ Admin Demo
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => { setUsername('supervisor'); setPassword('Supervisor@123'); setError(''); }}
-                            style={{
-                                background: 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.18)',
-                                color: '#b5c4d3',
-                                padding: '6px 12px',
-                                borderRadius: '7px',
-                                fontSize: '11px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            ⚡ Supervisor Demo
-                        </button>
-                    </div>
+
 
                 </form>
 
                 {/* Footer */}
                 <div className="login-footer">
-                    <span>DHM Factory Management System</span>
+                    <span>DHM Pyrotech Enterprises</span>
                     <span>Secure Access</span>
                 </div>
 
