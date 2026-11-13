@@ -30,6 +30,10 @@ function App() {
                     path="/login"
                     element={<Login />}
                 />
+                <Route
+                    path="/"
+                    element={<Navigate to="/login" replace />}
+                />
 
                 {/* MAIN APPLICATION */}
                 <Route element={<MainLayout />}>
@@ -119,7 +123,7 @@ function App() {
                 {/* UNKNOWN URL */}
                 <Route
                     path="*"
-                    element={<Navigate to="/dashboard" replace />}
+                    element={<Navigate to="/login" replace />}
                 />
 
             </Routes>
