@@ -1,4 +1,4 @@
-const CACHE_NAME = "dhm-factory-cache-v2";
+const CACHE_NAME = "dhm-factory-cache-v3";
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/dhm-logo.jpg", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -16,25 +16,35 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Network-first for navigation and API requests; cache-first for same-origin static assets.
+// Network-first for navigations (SPA); network-only passthrough for cross-origin/API GETs.
+// Cache-first for same-origin static assets. Non-GET requests are never intercepted.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+
   const url = new URL(req.url);
-  const isApi = url.pathname.startsWith("/api") || url.origin !== self.location.origin;
+  const isCrossOrigin = url.origin !== self.location.origin;
+  const isApiPath = url.pathname.startsWith("/api");
   const isNavigation = req.mode === "navigate";
 
-  if (isApi || isNavigation) {
+  // Don't interfere with cross-origin or API requests; let the browser handle them.
+  if (isCrossOrigin || isApiPath) return;
+
+  if (isNavigation) {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          if (isNavigation && res && res.ok) {
+          if (res && res.ok) {
             const copy = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", copy)).catch(() => null);
           }
           return res;
         })
-        .catch(() => caches.match(req).then((cached) => cached || caches.match("/index.html")))
+        .catch(async () => {
+          const cachedIndex = await caches.match("/index.html");
+          if (cachedIndex) return cachedIndex;
+          return new Response("Offline", { status: 503, statusText: "Offline", headers: { "Content-Type": "text/plain" } });
+        })
     );
     return;
   }
@@ -42,13 +52,15 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
-        }
-        return res;
-      }).catch(() => cached);
+      return fetch(req)
+        .then((res) => {
+          if (res && res.ok && res.type === "basic") {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
+          }
+          return res;
+        })
+        .catch(() => cached || Response.error());
     })
   );
 });
