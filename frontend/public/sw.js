@@ -1,5 +1,5 @@
-const CACHE_NAME = "dhm-factory-cache-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/dhm-logo.jpg"];
+const CACHE_NAME = "dhm-factory-cache-v2";
+const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/dhm-logo.jpg", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -16,16 +16,25 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Network-first for API/navigation requests, cache-first fallback for static assets.
+// Network-first for navigation and API requests; cache-first for same-origin static assets.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   const isApi = url.pathname.startsWith("/api") || url.origin !== self.location.origin;
+  const isNavigation = req.mode === "navigate";
 
-  if (isApi) {
+  if (isApi || isNavigation) {
     event.respondWith(
-      fetch(req).catch(() => caches.match(req))
+      fetch(req)
+        .then((res) => {
+          if (isNavigation && res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", copy)).catch(() => null);
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match("/index.html")))
     );
     return;
   }
@@ -34,10 +43,12 @@ self.addEventListener("fetch", (event) => {
     caches.match(req).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
+        }
         return res;
-      }).catch(() => caches.match("/index.html"));
+      }).catch(() => cached);
     })
   );
 });
