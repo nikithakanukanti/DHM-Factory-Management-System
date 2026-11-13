@@ -1,6 +1,21 @@
 import { useEffect, useState, useMemo } from "react";
 import api from "../api";
 
+const MODULE_OPTIONS = [
+    { key: "DASHBOARD", label: "Dashboard", desc: "Overview and key metrics" },
+    { key: "VEHICLES", label: "Vehicle Register", desc: "Weighbridge entries, photos, GPS" },
+    { key: "SALES", label: "Sales Dispatches", desc: "Sales records and invoices" },
+    { key: "CUSTOMERS", label: "Customers", desc: "Customer accounts and statements" },
+    { key: "PURCHASES", label: "Purchase Inward", desc: "Purchase records and inward entries" },
+    { key: "SUPPLIERS", label: "Suppliers", desc: "Supplier accounts and statements" },
+    { key: "INVENTORY", label: "Inventory Master", desc: "Stock, items, and movements" },
+    { key: "PAYMENTS", label: "Payments Log", desc: "Payment records and reconciliation" },
+    { key: "REACTOR", label: "Reactor Timing", desc: "Reactor/plant timing records" },
+    { key: "EMPLOYEES", label: "Employees & Attendance", desc: "Staff records and attendance" },
+    { key: "REPORTS", label: "Reports Hub", desc: "Reports and exports" },
+    { key: "NOTIFICATIONS", label: "Notification Centre", desc: "Alerts and notifications" }
+];
+
 function Users() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,6 +38,27 @@ function Users() {
         password: "",
         permittedModules: "DASHBOARD,VEHICLES,SALES,PURCHASES,REPORTS"
     });
+
+    function parseModules(mods) {
+        return new Set(
+            String(mods || "")
+                .split(",")
+                .map((m) => m.trim().toUpperCase())
+                .filter(Boolean)
+        );
+    }
+
+    function setModulesFromSet(set) {
+        const ordered = MODULE_OPTIONS.map((m) => m.key).filter((k) => set.has(k));
+        setForm((prev) => ({ ...prev, permittedModules: ordered.join(",") }));
+    }
+
+    function toggleModule(moduleKey) {
+        const current = parseModules(form.permittedModules);
+        if (current.has(moduleKey)) current.delete(moduleKey);
+        else current.add(moduleKey);
+        setModulesFromSet(current);
+    }
 
     async function loadUsers() {
         try {
@@ -87,6 +123,11 @@ function Users() {
             return;
         }
 
+        if ((form.role === "SUPERVISOR" || form.role === "CLIENT") && parseModules(form.permittedModules).size === 0) {
+            setError("Please assign at least one permitted module for Supervisor/Client users.");
+            return;
+        }
+
         try {
             setSaving(true);
             if (editingUser) {
@@ -94,7 +135,7 @@ function Users() {
                     fullName: form.fullName,
                     phone: form.phone,
                     role: form.role,
-                    permittedModules: form.permittedModules
+                    permittedModules: form.role === "ADMIN" ? "" : form.permittedModules
                 };
                 if (form.password.trim()) {
                     payload.password = form.password.trim();
@@ -109,7 +150,7 @@ function Users() {
                     phone: form.phone.trim(),
                     role: form.role,
                     password: form.password,
-                    permittedModules: form.permittedModules
+                    permittedModules: form.role === "ADMIN" ? "" : form.permittedModules
                 });
                 setSuccess(`User "${form.username.trim()}" created successfully as ${form.role}.`);
             }
@@ -188,6 +229,8 @@ function Users() {
         });
     }, [users, search, roleFilter]);
 
+    const selectedModuleSet = useMemo(() => parseModules(form.permittedModules), [form.permittedModules]);
+
     return (
         <div className="users-page">
 
@@ -207,7 +250,7 @@ function Users() {
                         disabled={loading || saving}
                         style={{ padding: "8px 16px", borderRadius: "6px", cursor: "pointer", border: "1px solid #cbd5e1", background: "#f8fafc" }}
                     >
-                        {loading ? "Loading..." : "↻ Refresh"}
+                        {loading ? "Loading..." : "Refresh"}
                     </button>
 
                     <button
@@ -229,7 +272,7 @@ function Users() {
 
             {error && (
                 <div style={{ padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: "8px", marginBottom: "16px" }}>
-                    ⚠ {error}
+                    ✕ {error}
                 </div>
             )}
 
@@ -239,7 +282,7 @@ function Users() {
                     <div style={{ flex: 1, minWidth: "220px" }}>
                         <input
                             type="text"
-                            placeholder="🔍 Search users by username, full name, or phone..."
+                            placeholder="Search users by username, full name, or phone..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
@@ -337,7 +380,7 @@ function Users() {
                                                     title="Edit user details"
                                                     style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer", fontSize: "12px" }}
                                                 >
-                                                    ✎ Edit
+                                                    Edit
                                                 </button>
 
                                                 {u.username.toLowerCase() !== "admin" && (
@@ -365,7 +408,7 @@ function Users() {
                                                         title="Delete user account"
                                                         style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: "12px" }}
                                                     >
-                                                        ✕ Delete
+                                                        Delete
                                                     </button>
                                                 )}
                                             </div>
@@ -396,10 +439,12 @@ function Users() {
                     <div style={{
                         background: "#fff",
                         borderRadius: "12px",
-                        maxWidth: "520px",
+                        maxWidth: "900px",
                         width: "100%",
                         padding: "24px",
-                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                        maxHeight: "90vh",
+                        overflowY: "auto"
                     }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                             <h2 style={{ margin: 0, fontSize: "18px", color: "#1e3a8a" }}>
@@ -408,119 +453,202 @@ function Users() {
                             <button
                                 onClick={() => setShowModal(false)}
                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}
+                                aria-label="Close"
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "minmax(260px, 320px) 1fr", gap: "16px", alignItems: "start" }}>
+                                {/* LEFT: Module assignment (scrollable) */}
+                                <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", background: "#f8fafc", padding: "12px", minHeight: "320px" }}>
+                                    <div style={{ fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                                        Assigned Module Access
+                                    </div>
+                                    <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "10px" }}>
+                                        {form.role === "ADMIN"
+                                            ? "Administrator has full access to all modules."
+                                            : form.role === "SUPERVISOR"
+                                                ? "Select permitted modules for this supervisor (limited access/resources)."
+                                                : "Select permitted modules for this client (read-only access)."}
+                                    </div>
+
+                                    {form.role === "ADMIN" ? (
+                                        <div style={{ padding: "12px", border: "1px dashed #cbd5e1", borderRadius: "8px", background: "#fff", color: "#334155", fontSize: "13px" }}>
+                                            <strong>Full Access</strong>
+                                            <div style={{ marginTop: "6px", color: "#64748b", fontSize: "12px" }}>
+                                                Admin users can access all modules including administration, settings, users, and audit logs.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ display: "flex", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModulesFromSet(new Set(MODULE_OPTIONS.map((m) => m.key)))}
+                                                    style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModulesFromSet(new Set())}
+                                                    style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
+                                                >
+                                                    Clear
+                                                </button>
+                                            </div>
+                                            <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px", display: "grid", gap: "8px" }}>
+                                                {MODULE_OPTIONS.map((mod) => {
+                                                    const checked = selectedModuleSet.has(mod.key);
+                                                    return (
+                                                        <label
+                                                            key={mod.key}
+                                                            style={{
+                                                                display: "flex",
+                                                                alignItems: "flex-start",
+                                                                gap: "10px",
+                                                                padding: "8px 10px",
+                                                                borderRadius: "8px",
+                                                                border: checked ? "1px solid #93c5fd" : "1px solid #e2e8f0",
+                                                                background: checked ? "#eff6ff" : "#fff",
+                                                                cursor: "pointer"
+                                                            }}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={() => toggleModule(mod.key)}
+                                                                style={{ marginTop: "2px" }}
+                                                            />
+                                                            <div>
+                                                                <div style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b" }}>{mod.label}</div>
+                                                                <div style={{ fontSize: "11px", color: "#64748b" }}>{mod.desc}</div>
+                                                                <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>{mod.key}</div>
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div style={{ marginTop: "10px", fontSize: "11px", color: "#64748b" }}>
+                                                Selected: <strong>{selectedModuleSet.size}</strong> module(s)
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* RIGHT: User details */}
                                 <div>
-                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Username *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        disabled={Boolean(editingUser)}
-                                        value={form.username}
-                                        onChange={(e) => setForm({ ...form, username: e.target.value })}
-                                        placeholder="e.g. shift_supervisor"
-                                        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-                                    />
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                                        <div>
+                                            <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                                Username *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                disabled={Boolean(editingUser)}
+                                                value={form.username}
+                                                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                                                placeholder="e.g. shift_supervisor"
+                                                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                                Role *
+                                            </label>
+                                            <select
+                                                value={form.role}
+                                                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                                                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                                            >
+                                                <option value="SUPERVISOR">SUPERVISOR (Limited access - permitted modules)</option>
+                                                <option value="ADMIN">ADMIN (Full system control)</option>
+                                                <option value="CLIENT">CLIENT (Read-only - permitted modules)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                                        <div>
+                                            <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                                Full Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={form.fullName}
+                                                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                                                placeholder="e.g. Rajesh Kumar"
+                                                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                                Phone Number
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={form.phone}
+                                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                                placeholder="+91 9876543210"
+                                                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: "12px" }}>
+                                        <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                            {editingUser ? "Reset Password (leave blank to keep current)" : "Password *"}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            required={!editingUser}
+                                            value={form.password}
+                                            onChange={(e) => setForm({ ...form, password: e.target.value })}
+                                            placeholder={editingUser ? "Leave blank to keep current password" : "Minimum 6 characters"}
+                                            style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                                        />
+                                    </div>
+
+                                    {(form.role === "SUPERVISOR" || form.role === "CLIENT") && (
+                                        <div style={{ marginBottom: "12px", padding: "10px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                            <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
+                                                Permitted Modules (auto-filled from selection)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={form.permittedModules}
+                                                onChange={(e) => setForm({ ...form, permittedModules: e.target.value.toUpperCase() })}
+                                                placeholder="DASHBOARD,VEHICLES,SALES,..."
+                                                style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "13px" }}
+                                            />
+                                            <small style={{ color: "#64748b", fontSize: "11px", display: "block", marginTop: "4px" }}>
+                                                Use the scrollable module list on the left to assign access (e.g. Vehicle Register, Sales, Purchases). You can also fine-tune keys here.
+                                            </small>
+                                        </div>
+                                    )}
+
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowModal(false)}
+                                            style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={saving}
+                                            style={{ padding: "8px 20px", borderRadius: "6px", border: "none", background: "#2563eb", color: "#fff", fontWeight: "600", cursor: "pointer" }}
+                                        >
+                                            {saving ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <div>
-                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Role *
-                                    </label>
-                                    <select
-                                        value={form.role}
-                                        onChange={(e) => setForm({ ...form, role: e.target.value })}
-                                        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-                                    >
-                                        <option value="SUPERVISOR">SUPERVISOR (Shift Weighbridge & Registers)</option>
-                                        <option value="ADMIN">ADMIN (Full System Control)</option>
-                                        <option value="CLIENT">CLIENT (Permitted Reports & Records Only)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                                <div>
-                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Full Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.fullName}
-                                        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                                        placeholder="e.g. Rajesh Kumar"
-                                        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Phone Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.phone}
-                                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                        placeholder="+91 9876543210"
-                                        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: "12px" }}>
-                                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                    {editingUser ? "Reset Password (leave blank to keep current)" : "Password *"}
-                                </label>
-                                <input
-                                    type="password"
-                                    required={!editingUser}
-                                    value={form.password}
-                                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                    placeholder={editingUser ? "••••••••" : "Minimum 6 characters"}
-                                    style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-                                />
-                            </div>
-
-                            {form.role === "CLIENT" && (
-                                <div style={{ marginBottom: "16px", padding: "10px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#334155" }}>
-                                        Permitted Modules (comma separated)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.permittedModules}
-                                        onChange={(e) => setForm({ ...form, permittedModules: e.target.value })}
-                                        placeholder="DASHBOARD,REPORTS,SALES"
-                                        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "13px" }}
-                                    />
-                                    <small style={{ color: "#64748b", fontSize: "11px", display: "block", marginTop: "4px" }}>
-                                        Clients will only see and access navigation items specified in this list.
-                                    </small>
-                                </div>
-                            )}
-
-                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    style={{ padding: "8px 20px", borderRadius: "6px", border: "none", background: "#2563eb", color: "#fff", fontWeight: "600", cursor: "pointer" }}
-                                >
-                                    {saving ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
-                                </button>
                             </div>
                         </form>
                     </div>

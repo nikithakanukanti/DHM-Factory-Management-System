@@ -345,7 +345,7 @@ function MainLayout() {
                         </div>
                     </div>
                     <button className="logout-button" onClick={logout}>
-                        <span>â†ª</span> Logout
+                        <span aria-hidden="true">⎋</span> Logout
                     </button>
                 </div>
             </aside>
@@ -355,7 +355,7 @@ function MainLayout() {
                 <header className="topbar">
                     <div className="topbar-left">
                         <button className="mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-                            â˜°
+                            ☰
                         </button>
                         <div className="topbar-title">
                             <img src="/dhm-logo.jpg" alt="DHM Pyrotech" className="topbar-logo" />
@@ -397,10 +397,10 @@ function MainLayout() {
                         background: "white", padding: "24px", borderRadius: "12px", width: "100%", maxWidth: "400px",
                         boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
                     }}>
-                        <h3 style={{ margin: "0 0 16px", color: "#173f67" }}>ðŸ”‘ Update Account Password</h3>
+                        <h3 style={{ margin: "0 0 16px", color: "#173f67" }}>Update Account Password</h3>
 
-                        {passMsg && <div style={{ color: "#15803d", marginBottom: "12px", fontSize: "13px" }}>âœ“ {passMsg}</div>}
-                        {passErr && <div style={{ color: "#b91c1c", marginBottom: "12px", fontSize: "13px" }}>âš  {passErr}</div>}
+                        {passMsg && <div style={{ color: "#15803d", marginBottom: "12px", fontSize: "13px" }}>✓ {passMsg}</div>}
+                        {passErr && <div style={{ color: "#b91c1c", marginBottom: "12px", fontSize: "13px" }}>✕ {passErr}</div>}
 
                         <form onSubmit={handleChangePassword}>
                             <div className="form-group">
